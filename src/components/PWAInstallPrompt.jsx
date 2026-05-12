@@ -6,18 +6,25 @@ export default function PWAInstallPrompt() {
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    // 이미 설치된 PWA로 실행 중이면 표시 안 함
     if (window.matchMedia('(display-mode: standalone)').matches) return;
 
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
     setIsIOS(ios);
-    setVisible(true);
 
+    // 전역에 미리 잡아둔 프롬프트 사용
+    if (window.__pwaPrompt) {
+      setDeferredPrompt(window.__pwaPrompt);
+    }
+
+    // 혹시 아직 안 왔으면 이후에 오는 것도 받음
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      window.__pwaPrompt = e;
     };
     window.addEventListener('beforeinstallprompt', handler);
+
+    setVisible(true);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
@@ -27,6 +34,7 @@ export default function PWAInstallPrompt() {
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') setVisible(false);
     setDeferredPrompt(null);
+    window.__pwaPrompt = null;
   }
 
   if (!visible) return null;
