@@ -8,6 +8,7 @@ export default function BibleReader({ bible, version, onCopy, gotoRef, bookmarks
   const [editingNote, setEditingNote] = useState(null);
   const [noteText, setNoteText]       = useState('');
   const [hlVerse, setHlVerse]         = useState(null);
+  const [toast, setToast]             = useState(false);
   const verseListRef   = useRef(null);
   const verseEls       = useRef({});
   const gotoChapterRef = useRef(null);
@@ -94,6 +95,8 @@ export default function BibleReader({ bible, version, onCopy, gotoRef, bookmarks
   function copyVerse(v, text) {
     const name = bookInfo?.abbr ?? bookInfo?.ko;
     navigator.clipboard.writeText(`${text} (${name} ${chapter}:${v})`);
+    setToast(true);
+    setTimeout(() => setToast(false), 2000);
   }
 
   function copyChapter() {
@@ -200,6 +203,7 @@ export default function BibleReader({ bible, version, onCopy, gotoRef, bookmarks
         })}
         {verses.length === 0 && <div className="empty">본문을 불러오는 중...</div>}
       </div>
+      {toast && <div className="toast">복사되었습니다</div>}
     </div>
   );
 }
