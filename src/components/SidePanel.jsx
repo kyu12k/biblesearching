@@ -59,6 +59,7 @@ export default function SidePanel({
   fontSize, onFontSize,
   hlDuration, onHlDuration,
   hlColor, onHlColor,
+  bmColor, onBmColor,
 }) {
   if (!activePanel) return null;
 
@@ -134,7 +135,7 @@ export default function SidePanel({
                   onChange={e => onFontSize(+e.target.value)} />
               </div>
 
-              <div className="setting-section-title">구절 하이라이트</div>
+              <div className="setting-section-title">이동 하이라이트</div>
               <div className="setting-row">
                 <label>지속 시간 <strong>{hlDuration}초</strong></label>
                 <input type="range" min="1" max="5" step="1" value={hlDuration}
@@ -145,10 +146,25 @@ export default function SidePanel({
                 <div className="color-swatches">
                   {HL_COLORS.map(c => (
                     <button key={c.value}
-                      className={`color-swatch ${hlColor === c.value ? 'active' : ''}`}
+                      className={`color-swatch ${hlColor === c.value ? 'active' : ''} ${bmColor === c.value ? 'disabled' : ''}`}
                       style={{ background: c.value }}
-                      title={c.label}
-                      onClick={() => onHlColor(c.value)}
+                      title={bmColor === c.value ? '즐겨찾기 색상과 중복' : c.label}
+                      onClick={() => bmColor !== c.value && onHlColor(c.value)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="setting-section-title">즐겨찾기 하이라이트</div>
+              <div className="setting-row">
+                <label>색상</label>
+                <div className="color-swatches">
+                  {HL_COLORS.map(c => (
+                    <button key={c.value}
+                      className={`color-swatch ${bmColor === c.value ? 'active' : ''} ${hlColor === c.value ? 'disabled' : ''}`}
+                      style={{ background: c.value }}
+                      title={hlColor === c.value ? '이동 하이라이트 색상과 중복' : c.label}
+                      onClick={() => hlColor !== c.value && onBmColor(c.value)}
                     />
                   ))}
                 </div>

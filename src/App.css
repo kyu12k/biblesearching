@@ -440,6 +440,8 @@ mark { background: var(--mark); border-radius: 2px; }
 }
 .color-swatch:hover { transform: scale(1.15); }
 .color-swatch.active { border-color: var(--accent); transform: scale(1.15); }
+.color-swatch.disabled { opacity: .3; cursor: not-allowed; }
+.color-swatch.disabled:hover { transform: none; }
 
 /* ── Toast ─────────────────────────────────────────────────── */
 .toast {

@@ -38,6 +38,7 @@ export default function App() {
   const [fontSize,  setFontSize]  = useLocalStorage('bs-fontsize',  15);
   const [hlDuration, setHlDuration] = useLocalStorage('bs-hldur',   2);
   const [hlColor,    setHlColor]    = useLocalStorage('bs-hlcolor', '#ffe08a');
+  const [bmColor,    setBmColor]    = useLocalStorage('bs-bmcolor', '#a8d8f0');
 
   // Apply theme & font size to root
   useEffect(() => {
@@ -155,6 +156,7 @@ export default function App() {
             onNote={setNotes}
             hlDuration={hlDuration}
             hlColor={hlColor}
+            bmColor={bmColor}
           />
         </div>
         <div className={`tab-content${tab === 'search' ? ' active' : ''}`}>
@@ -194,6 +196,8 @@ export default function App() {
         onHlDuration={setHlDuration}
         hlColor={hlColor}
         onHlColor={setHlColor}
+        bmColor={bmColor}
+        onBmColor={setBmColor}
       />
     </div>
   );

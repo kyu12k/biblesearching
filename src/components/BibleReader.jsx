@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BOOKS, BOOK_MAP } from '../data/books';
 
-export default function BibleReader({ bible, version, onCopy, onToast, gotoRef, bookmarks, onBookmark, notes, onNote, hlDuration, hlColor }) {
+export default function BibleReader({ bible, version, onCopy, onToast, gotoRef, bookmarks, onBookmark, notes, onNote, hlDuration, hlColor, bmColor }) {
   const [bookId, setBookId]           = useState(1);
   const [chapter, setChapter]         = useState(1);
   const [selected, setSelected]       = useState(new Set());
@@ -140,12 +140,14 @@ export default function BibleReader({ bible, version, onCopy, onToast, gotoRef, 
           const bmd  = isBookmarked(v);
           const note = getNote(v);
           const isHl = hlVerse === v;
+          const bmStyle = bmd ? { backgroundColor: bmColor ?? '#a8d8f0' } : {};
+          const hlStyle = isHl ? { '--hl-color': hlColor ?? '#ffe08a', '--hl-dur': (hlDuration ?? 2) + 's' } : {};
           return (
             <div
               key={v}
               ref={el => verseEls.current[v] = el}
               className={`verse-block${selected.has(v) ? ' selected' : ''}${isHl ? ' highlighted' : ''}`}
-              style={isHl ? { '--hl-color': hlColor ?? '#ffe08a', '--hl-dur': (hlDuration ?? 2) + 's' } : {}}
+              style={{ ...bmStyle, ...hlStyle }}
             >
               <div className="verse" onClick={() => toggleVerse(v)}>
                 <span className="verse-num">{v}</span>
