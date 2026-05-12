@@ -4,27 +4,18 @@ export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [visible, setVisible] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [installed, setInstalled] = useState(false);
 
   useEffect(() => {
     // 이미 설치된 PWA로 실행 중이면 표시 안 함
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setInstalled(true);
-      return;
-    }
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
 
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
     setIsIOS(ios);
-
-    if (ios) {
-      setVisible(true);
-      return;
-    }
+    setVisible(true);
 
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setVisible(true);
     };
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
@@ -38,7 +29,7 @@ export default function PWAInstallPrompt() {
     setDeferredPrompt(null);
   }
 
-  if (installed || !visible) return null;
+  if (!visible) return null;
 
   return (
     <div className="pwa-overlay" onClick={() => setVisible(false)}>
@@ -52,13 +43,18 @@ export default function PWAInstallPrompt() {
               Safari 하단의 <b>공유 버튼(⎙)</b>을 누른 후<br />
               <b>"홈 화면에 추가"</b>를 선택하세요.
             </p>
-          ) : (
+          ) : deferredPrompt ? (
             <div className="pwa-actions">
               <button className="pwa-btn-install" onClick={handleInstall}>설치하기</button>
               <button className="pwa-btn-cancel" onClick={() => setVisible(false)}>나중에</button>
             </div>
+          ) : (
+            <p className="pwa-ios-tip">
+              브라우저 주소창 오른쪽의 <b>설치(⊕)</b> 아이콘을 누르거나,<br />
+              메뉴 → <b>"앱 설치"</b>를 선택하세요.
+            </p>
           )}
-          {isIOS && (
+          {(isIOS || !deferredPrompt) && (
             <button className="pwa-btn-cancel" onClick={() => setVisible(false)}>닫기</button>
           )}
         </div>
