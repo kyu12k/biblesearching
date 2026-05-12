@@ -22,6 +22,7 @@ export default function App() {
   const [version, setVersion] = useState('HRV');
   const [loading, setLoading] = useState(true);
   const [copyCtx, setCopyCtx] = useState(null);
+  const [toast, setToast] = useState(false);
   const [gotoRef, setGotoRef] = useState(null);
   const [activePanel, setActivePanel] = useState(null);
 
@@ -159,8 +160,11 @@ export default function App() {
       </main>
 
       {copyCtx && (
-        <CopyModal {...copyCtx} version={version} onClose={() => setCopyCtx(null)} />
+        <CopyModal {...copyCtx} version={version} onClose={() => setCopyCtx(null)}
+          onCopied={() => { setCopyCtx(null); setToast(true); setTimeout(() => setToast(false), 2000); }} />
       )}
+
+      {toast && <div className="toast">복사되었습니다</div>}
 
       <PWAInstallPrompt />
 

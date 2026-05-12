@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BOOK_MAP } from '../data/books';
 
-export default function CopyModal({ bookId, chapter, verses, chapterData, version, onClose }) {
+export default function CopyModal({ bookId, chapter, verses, chapterData, version, onClose, onCopied }) {
   const [useAbbr, setUseAbbr]           = useState(true);
   const [showParen, setShowParen]       = useState(true);
   const [showVerseNum, setShowVerseNum] = useState(true);
   const [eachLine, setEachLine]         = useState(false);
-  const [copied, setCopied]             = useState(false);
 
   const bookInfo = BOOK_MAP[bookId];
   const bookName = useAbbr ? bookInfo?.abbr : bookInfo?.ko;
@@ -32,8 +31,7 @@ export default function CopyModal({ bookId, chapter, verses, chapterData, versio
 
   async function copy() {
     await navigator.clipboard.writeText(preview);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    onCopied();
   }
 
   return (
@@ -57,9 +55,7 @@ export default function CopyModal({ bookId, chapter, verses, chapterData, versio
         </div>
 
         <div className="modal-footer">
-          <button className={`copy-confirm-btn ${copied ? 'copied' : ''}`} onClick={copy}>
-            {copied ? '복사됨!' : '클립보드에 복사'}
-          </button>
+          <button className="copy-confirm-btn" onClick={copy}>클립보드에 복사</button>
         </div>
       </div>
     </div>
