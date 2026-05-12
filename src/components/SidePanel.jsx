@@ -10,7 +10,7 @@ const HL_COLORS = [
 export default function SidePanel({
   activePanel, onClose,
   bookmarks, onGoToBookmark, onRemoveBookmark,
-  history, onGoToHistory,
+  history, onGoToHistory, onRemoveHistory,
   darkMode, onDarkMode,
   fontSize, onFontSize,
   hlDuration, onHlDuration,
@@ -49,9 +49,12 @@ export default function SidePanel({
             history.length === 0
               ? <div className="empty">기록이 없습니다.</div>
               : history.map((h, i) => (
-                <div key={i} className="side-item" onClick={() => { onGoToHistory(h); onClose(); }}>
-                  <strong>{BOOK_MAP[h.b]?.ko} {h.c}장</strong>
-                  <span className="side-item-time">{h.time}</span>
+                <div key={i} className="side-item">
+                  <div className="side-item-ref" onClick={() => { onGoToHistory(h); onClose(); }}>
+                    <strong>{BOOK_MAP[h.b]?.ko} {h.c}장</strong>
+                    <span className="side-item-time">{h.time}</span>
+                  </div>
+                  <button className="remove-btn" onClick={() => onRemoveHistory(i)}>✕</button>
                 </div>
               ))
           )}

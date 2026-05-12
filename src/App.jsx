@@ -76,11 +76,14 @@ export default function App() {
     if (!ref) { setQuickError(true); return; }
     setQuickError(false);
     setQuickInput('');
-    navigate(ref.b, ref.c);
+    navigate(ref.b, ref.c, ref.v);
   }
 
   function removeBookmark(idx) {
     setBookmarks(prev => prev.filter((_, i) => i !== idx));
+  }
+  function removeHistory(idx) {
+    setHistory(prev => prev.filter((_, i) => i !== idx));
   }
 
   if (loading) {
@@ -95,7 +98,7 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <span className="app-title">✝ 성경 검색</span>
+        <span className="app-title">✝ 장절 검색</span>
 
         {/* Quick navigation */}
         <div className={`quick-nav ${quickError ? 'error' : ''}`}>
@@ -177,6 +180,7 @@ export default function App() {
         onRemoveBookmark={removeBookmark}
         history={history}
         onGoToHistory={h => navigate(h.b, h.c)}
+        onRemoveHistory={removeHistory}
         darkMode={darkMode}
         onDarkMode={setDarkMode}
         fontSize={fontSize}
