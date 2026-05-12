@@ -402,6 +402,16 @@ mark { background: var(--mark); border-radius: 2px; }
 }
 .toggle-switch.on span { transform: translateX(20px); }
 
+/* ── Color Swatches ────────────────────────────────────────── */
+.color-swatches { display: flex; gap: 8px; }
+.color-swatch {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer;
+  transition: transform .15s, border-color .15s;
+}
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.active { border-color: var(--accent); transform: scale(1.15); }
+
 /* ── Toast ─────────────────────────────────────────────────── */
 .toast {
   position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
