@@ -454,6 +454,12 @@ mark { background: var(--mark); border-radius: 2px; }
   margin-top: 4px;
 }
 .pwa-btn-cancel:hover { background: var(--bg); }
+.pwa-btn-dismiss-forever {
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; color: var(--muted); padding: 2px 0; text-decoration: underline;
+  text-underline-offset: 2px; margin-top: 2px; text-align: left;
+}
+.pwa-btn-dismiss-forever:hover { color: var(--text); }
 
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 600px) {

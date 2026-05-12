@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+const DISMISSED_KEY = 'pwa-dismissed';
+
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [visible, setVisible] = useState(false);
@@ -7,16 +9,13 @@ export default function PWAInstallPrompt() {
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) return;
+    if (localStorage.getItem(DISMISSED_KEY)) return;
 
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
     setIsIOS(ios);
 
-    // 전역에 미리 잡아둔 프롬프트 사용
-    if (window.__pwaPrompt) {
-      setDeferredPrompt(window.__pwaPrompt);
-    }
+    if (window.__pwaPrompt) setDeferredPrompt(window.__pwaPrompt);
 
-    // 혹시 아직 안 왔으면 이후에 오는 것도 받음
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -27,6 +26,9 @@ export default function PWAInstallPrompt() {
     setVisible(true);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
+
+  function dismiss() { setVisible(false); }
+  function dismissForever() { localStorage.setItem(DISMISSED_KEY, '1'); setVisible(false); }
 
   async function handleInstall() {
     if (!deferredPrompt) return;
@@ -40,7 +42,7 @@ export default function PWAInstallPrompt() {
   if (!visible) return null;
 
   return (
-    <div className="pwa-overlay" onClick={() => setVisible(false)}>
+    <div className="pwa-overlay" onClick={dismiss}>
       <div className="pwa-popup" onClick={e => e.stopPropagation()}>
         <img src="/icon.png" alt="앱 아이콘" className="pwa-icon" />
         <div className="pwa-body">
@@ -54,7 +56,7 @@ export default function PWAInstallPrompt() {
           ) : deferredPrompt ? (
             <div className="pwa-actions">
               <button className="pwa-btn-install" onClick={handleInstall}>설치하기</button>
-              <button className="pwa-btn-cancel" onClick={() => setVisible(false)}>나중에</button>
+              <button className="pwa-btn-cancel" onClick={dismiss}>나중에</button>
             </div>
           ) : (
             <p className="pwa-ios-tip">
@@ -62,9 +64,7 @@ export default function PWAInstallPrompt() {
               메뉴 → <b>"앱 설치"</b>를 선택하세요.
             </p>
           )}
-          {(isIOS || !deferredPrompt) && (
-            <button className="pwa-btn-cancel" onClick={() => setVisible(false)}>닫기</button>
-          )}
+          <button className="pwa-btn-dismiss-forever" onClick={dismissForever}>다시 보지 않기</button>
         </div>
       </div>
     </div>
