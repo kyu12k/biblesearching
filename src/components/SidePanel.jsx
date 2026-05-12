@@ -156,6 +156,18 @@ export default function SidePanel({
             </div>
           )}
         </div>
+
+        {activePanel === 'settings' && (
+          <a
+            className="ad-banner"
+            href="https://kingsload.pages.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className="ad-label">AD</span>
+            가장 쉬운 계시록 암송, 킹스로드
+          </a>
+        )}
       </div>
     </div>
   );
