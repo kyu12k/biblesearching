@@ -49,6 +49,15 @@ export default function SearchPanel({ bibles, onGoTo }) {
           }
         }
       }
+      // 원본 쿼리가 구절 안에 연속으로 등장하면 상위 노출
+      const phrase = query.trim();
+      const phraseVariants = eiVariants(phrase);
+      found.sort((a, b) => {
+        const aExact = phraseVariants.some(p => a.text.includes(p)) ? 0 : 1;
+        const bExact = phraseVariants.some(p => b.text.includes(p)) ? 0 : 1;
+        return aExact - bExact;
+      });
+
       setResults(found);
       setSearching(false);
     }, 0);
