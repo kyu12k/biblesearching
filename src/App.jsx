@@ -143,6 +143,7 @@ export default function App() {
             onCopy={(bookId, chapter, verses, chapterData) =>
               setCopyCtx({ bookId, chapter, verses, chapterData })
             }
+            onToast={() => { setToast(true); setTimeout(() => setToast(false), 2000); }}
             bookmarks={bookmarks}
             onBookmark={setBookmarks}
             notes={notes}
