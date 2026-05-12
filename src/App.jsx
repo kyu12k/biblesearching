@@ -122,6 +122,8 @@ export default function App() {
           )}
           <button className={`icon-btn header-icon ${activePanel === 'bookmarks' ? 'active' : ''}`}
             onClick={() => setActivePanel(p => p === 'bookmarks' ? null : 'bookmarks')} title="즐겨찾기">★</button>
+          <button className={`icon-btn header-icon ${activePanel === 'notes' ? 'active' : ''}`}
+            onClick={() => setActivePanel(p => p === 'notes' ? null : 'notes')} title="메모">✎</button>
           <button className={`icon-btn header-icon ${activePanel === 'history' ? 'active' : ''}`}
             onClick={() => setActivePanel(p => p === 'history' ? null : 'history')} title="최근 기록">🕐</button>
           <button className={`icon-btn header-icon ${activePanel === 'settings' ? 'active' : ''}`}
@@ -178,6 +180,9 @@ export default function App() {
         bookmarks={bookmarks}
         onGoToBookmark={bm => navigate(bm.b, bm.c)}
         onRemoveBookmark={removeBookmark}
+        notes={notes}
+        onNote={setNotes}
+        onGoToNote={(b, c, v) => navigate(b, c, v)}
         history={history}
         onGoToHistory={h => navigate(h.b, h.c)}
         onRemoveHistory={removeHistory}

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BOOK_MAP } from '../data/books';
 
 const HL_COLORS = [
@@ -7,10 +8,53 @@ const HL_COLORS = [
   { value: '#f0b8d8', label: '분홍' },
 ];
 
+function NotesPanel({ notes, onGoTo, onDelete, onClose }) {
+  const [query, setQuery] = useState('');
+
+  const entries = Object.entries(notes)
+    .map(([key, text]) => {
+      const [b, c, v] = key.split('-').map(Number);
+      return { b, c, v, text };
+    })
+    .filter(({ text }) =>
+      query.trim() === '' || text.includes(query.trim())
+    )
+    .sort((a, b) => a.b - b.b || a.c - b.c || a.v - b.v);
+
+  return (
+    <>
+      <div className="notes-search-wrap">
+        <input
+          className="notes-search-input"
+          placeholder="메모 검색..."
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+        />
+      </div>
+      {entries.length === 0
+        ? <div className="empty">{query ? '검색 결과가 없습니다.' : '메모가 없습니다.\n절 옆 ✎ 버튼으로 추가하세요.'}</div>
+        : entries.map(({ b, c, v, text }) => {
+          const key = `${b}-${c}-${v}`;
+          return (
+            <div key={key} className="side-item note-item">
+              <div className="side-item-ref" onClick={() => { onGoTo(b, c, v); onClose(); }}>
+                <strong>{BOOK_MAP[b]?.ko} {c}:{v}</strong>
+                <span className="note-preview">{text}</span>
+              </div>
+              <button className="remove-btn" onClick={() => onDelete(key)}>✕</button>
+            </div>
+          );
+        })
+      }
+    </>
+  );
+}
+
 export default function SidePanel({
   activePanel, onClose,
   bookmarks, onGoToBookmark, onRemoveBookmark,
   history, onGoToHistory, onRemoveHistory,
+  notes, onNote, onGoToNote,
   darkMode, onDarkMode,
   fontSize, onFontSize,
   hlDuration, onHlDuration,
@@ -18,12 +62,19 @@ export default function SidePanel({
 }) {
   if (!activePanel) return null;
 
+  function deleteNote(key) {
+    const next = { ...notes };
+    delete next[key];
+    onNote(next);
+  }
+
   return (
     <div className="side-panel-overlay" onClick={onClose}>
       <div className="side-panel" onClick={e => e.stopPropagation()}>
         <div className="side-panel-header">
           <h2>
             {activePanel === 'bookmarks' && '★ 즐겨찾기'}
+            {activePanel === 'notes'     && '✎ 메모'}
             {activePanel === 'history'   && '🕐 최근 본 구절'}
             {activePanel === 'settings'  && '⚙ 설정'}
           </h2>
@@ -43,6 +94,15 @@ export default function SidePanel({
                   <button className="remove-btn" onClick={() => onRemoveBookmark(i)}>✕</button>
                 </div>
               ))
+          )}
+
+          {activePanel === 'notes' && (
+            <NotesPanel
+              notes={notes}
+              onGoTo={onGoToNote}
+              onDelete={deleteNote}
+              onClose={onClose}
+            />
           )}
 
           {activePanel === 'history' && (
