@@ -116,6 +116,8 @@ body {
 
 /* ── Main ──────────────────────────────────────────────────── */
 .app-main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.tab-content { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.tab-content.active { display: flex; }
 
 /* ── Loading ───────────────────────────────────────────────── */
 .loading-screen {

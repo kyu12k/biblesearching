@@ -1,14 +1,22 @@
 import { useState } from 'react';
 import { BOOKS, BOOK_MAP } from '../data/books';
 
-// 각 글자 사이 공백을 허용하는 정규식 (띄어쓰기 오류 보정)
 function makeFlexRegex(keyword) {
-  return new RegExp(keyword.split('').join('[\s]*'), 'g');
+  return new RegExp(keyword.split('').join('[\\s]*'), 'g');
+}
+
+// '의' 붙여쓰기/띄어쓰기 변형 생성
+function eiVariants(keyword) {
+  const set = new Set([keyword]);
+  set.add(keyword.replace(/의([^\s])/g, '의 $1')); // 하나님의전 → 하나님의 전
+  set.add(keyword.replace(/의 /g, '의'));           // 하나님의 전 → 하나님의전
+  return [...set];
 }
 
 function matchKeyword(text, keyword) {
-  if (text.includes(keyword)) return true;
-  return makeFlexRegex(keyword).test(text);
+  return eiVariants(keyword).some(variant =>
+    text.includes(variant) || makeFlexRegex(variant).test(text)
+  );
 }
 
 export default function SearchPanel({ bibles, onGoTo }) {
@@ -49,8 +57,10 @@ export default function SearchPanel({ bibles, onGoTo }) {
   function highlight(text) {
     const keywords = query.trim().split(/\s+/).filter(Boolean);
     if (!keywords.length) return text;
+    // 각 키워드의 모든 변형에 대해 하이라이트
+    const allVariants = keywords.flatMap(k => eiVariants(k));
     let parts = [{ t: text, marked: false }];
-    for (const k of keywords) {
+    for (const k of allVariants) {
       const regex = makeFlexRegex(k);
       parts = parts.flatMap(part => {
         if (part.marked) return [part];
@@ -72,7 +82,6 @@ export default function SearchPanel({ bibles, onGoTo }) {
 
   return (
     <div className="search-panel">
-      <div className="search-header"><h2>키워드 검색</h2></div>
       <div className="search-controls">
         <input type="text" className="search-input"
           placeholder="검색어 입력 (띄어쓰기로 구분)"

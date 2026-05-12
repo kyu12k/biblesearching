@@ -12,7 +12,7 @@ import './App.css';
 
 const TABS = [
   { id: 'read',    label: '본문 조회' },
-  { id: 'search',  label: '검색' },
+  { id: 'search',  label: '단어 검색' },
   { id: 'compare', label: '버전 비교' },
 ];
 
@@ -135,7 +135,7 @@ export default function App() {
       </nav>
 
       <main className="app-main">
-        {tab === 'read' && (
+        <div className={`tab-content${tab === 'read' ? ' active' : ''}`}>
           <BibleReader
             bible={bibles[version]}
             version={version}
@@ -151,13 +151,13 @@ export default function App() {
             hlDuration={hlDuration}
             hlColor={hlColor}
           />
-        )}
-        {tab === 'search' && (
+        </div>
+        <div className={`tab-content${tab === 'search' ? ' active' : ''}`}>
           <SearchPanel bibles={bibles} onGoTo={(b, c, v) => navigate(b, c, v)} />
-        )}
-        {tab === 'compare' && (
+        </div>
+        <div className={`tab-content${tab === 'compare' ? ' active' : ''}`}>
           <CompareView bibles={bibles} />
-        )}
+        </div>
       </main>
 
       {copyCtx && (
