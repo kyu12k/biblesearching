@@ -25,9 +25,10 @@ export default function SearchPanel({ bibles, onGoTo }) {
   const [startBook, setStartBook] = useState(1);
   const [endBook, setEndBook]     = useState(66);
   const [version, setVersion]     = useState('HRV');
-  const [results, setResults]     = useState(null);
-  const [searching, setSearching] = useState(false);
+  const [results, setResults]       = useState(null);
+  const [searching, setSearching]   = useState(false);
   const [visibleCount, setVisibleCount] = useState(100);
+  const [optionsOpen, setOptionsOpen] = useState(true);
   const [openNiv, setOpenNiv]     = useState(null);
   const [copied, setCopied]       = useState(null);
   const [copiedNiv, setCopiedNiv] = useState(null);
@@ -95,6 +96,7 @@ export default function SearchPanel({ bibles, onGoTo }) {
       setResults(found);
       setVisibleCount(100);
       setOpenNiv(null);
+      setOptionsOpen(false);
       setSearching(false);
     }, 0);
   }
@@ -127,35 +129,49 @@ export default function SearchPanel({ bibles, onGoTo }) {
 
   return (
     <div className="search-panel">
-      <div className="search-controls">
-        <input type="text" className="search-input"
-          placeholder="검색어 입력 (띄어쓰기로 구분)"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && search()}
-        />
-        <div className="search-options">
-          <label className="toggle-label">
-            <input type="checkbox" checked={isAnd} onChange={e => setIsAnd(e.target.checked)} />
-            AND 검색
-            <span className="info-tip" data-tip="띄어쓰기로 구분한 단어가 모두 포함된 구절만 검색합니다.&#10;체크 해제 시 하나라도 포함되면 결과에 표시됩니다. (OR 검색)">!</span>
-          </label>
-          <select value={version} onChange={e => setVersion(e.target.value)}>
-            <option value="HRV">개역한글 (HRV)</option>
-            <option value="NIV">NIV (영어)</option>
-          </select>
-          <select value={startBook} onChange={e => setStartBook(+e.target.value)}>
-            {BOOKS.map(b => <option key={b.id} value={b.id}>{b.ko}</option>)}
-          </select>
-          <span>~</span>
-          <select value={endBook} onChange={e => setEndBook(+e.target.value)}>
-            {BOOKS.map(b => <option key={b.id} value={b.id}>{b.ko}</option>)}
-          </select>
-          <button className="search-btn" onClick={search} disabled={searching}>
-            {searching ? '검색 중...' : '검색'}
+      <form className="search-controls" onSubmit={e => { e.preventDefault(); search(); }}>
+        <div className="search-input-row">
+          <input type="text" className="search-input"
+            placeholder="검색어 입력 (띄어쓰기로 구분)"
+            value={query}
+            onChange={e => { setQuery(e.target.value); if (results !== null) setOptionsOpen(true); }}
+            inputMode="search"
+            enterKeyHint="search"
+          />
+          <button type="submit" className="search-btn" disabled={searching}>
+            {searching ? '…' : '검색'}
           </button>
         </div>
-      </div>
+        <button
+          type="button"
+          className="options-toggle"
+          onClick={() => setOptionsOpen(o => !o)}
+        >
+          옵션 {optionsOpen ? '▲' : '▼'}
+        </button>
+        {optionsOpen && (
+          <div className="search-options">
+            <label className="toggle-label">
+              <input type="checkbox" checked={isAnd} onChange={e => setIsAnd(e.target.checked)} />
+              AND 검색
+              <span className="info-tip" data-tip="띄어쓰기로 구분한 단어가 모두 포함된 구절만 검색합니다.&#10;체크 해제 시 하나라도 포함되면 결과에 표시됩니다. (OR 검색)">!</span>
+            </label>
+            <div className="search-options-row">
+              <select value={version} onChange={e => setVersion(e.target.value)}>
+                <option value="HRV">개역한글 (HRV)</option>
+                <option value="NIV">NIV (영어)</option>
+              </select>
+              <select value={startBook} onChange={e => setStartBook(+e.target.value)}>
+                {BOOKS.map(b => <option key={b.id} value={b.id}>{b.ko}</option>)}
+              </select>
+              <span>~</span>
+              <select value={endBook} onChange={e => setEndBook(+e.target.value)}>
+                {BOOKS.map(b => <option key={b.id} value={b.id}>{b.ko}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
+      </form>
       {results !== null && (
         <div className="search-results">
           <div className="result-count">{results.length}개 결과</div>
