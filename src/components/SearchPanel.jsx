@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { BOOKS, BOOK_MAP } from '../data/books';
 
 function makeFlexRegex(keyword) {
@@ -27,6 +27,40 @@ export default function SearchPanel({ bibles, onGoTo }) {
   const [version, setVersion]     = useState('HRV');
   const [results, setResults]     = useState(null);
   const [searching, setSearching] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(100);
+  const [openNiv, setOpenNiv]     = useState(null);
+  const [copied, setCopied]       = useState(null);
+  const [copiedNiv, setCopiedNiv] = useState(null);
+  const sentinelRef = useRef(null);
+
+
+  useEffect(() => {
+    if (!sentinelRef.current || !results) return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) setVisibleCount(c => Math.min(c + 100, results.length));
+    }, { threshold: 0.1 });
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [results, visibleCount]);
+
+  function copyVerse(text, ref, idx) {
+    navigator.clipboard.writeText(`${ref} ${text}`).then(() => {
+      setCopied(idx);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  }
+
+  function copyNiv(text, ref) {
+    navigator.clipboard.writeText(`${ref} ${text}`).then(() => {
+      setCopiedNiv(true);
+      setTimeout(() => setCopiedNiv(false), 1500);
+    });
+  }
+
+  function getNivText(b, c, v) {
+    try { return bibles.NIV?.[String(b)]?.[String(c)]?.[String(v)] ?? null; }
+    catch { return null; }
+  }
 
   function search() {
     const keywords = query.trim().split(/\s+/).filter(Boolean);
@@ -59,6 +93,8 @@ export default function SearchPanel({ bibles, onGoTo }) {
       });
 
       setResults(found);
+      setVisibleCount(100);
+      setOpenNiv(null);
       setSearching(false);
     }, 0);
   }
@@ -124,13 +160,48 @@ export default function SearchPanel({ bibles, onGoTo }) {
         <div className="search-results">
           <div className="result-count">{results.length}개 결과</div>
           <div className="result-list">
-            {results.map(({ b, c, v, text }, i) => (
-              <div key={i} className="result-item" onClick={() => onGoTo(b, c, v)}>
-                <span className="result-ref">{BOOK_MAP[b]?.ko} {c}:{v}</span>
-                <span className="result-text">{highlight(text)}</span>
-              </div>
-            ))}
+            {results.slice(0, visibleCount).map(({ b, c, v, text }, i) => {
+              const ref = `${BOOK_MAP[b]?.ko} ${c}:${v}`;
+              const nivText = getNivText(b, c, v);
+              const isOpen = openNiv === i;
+              return (
+                <div key={i} className="result-item-wrap">
+                  <div className="result-item" onClick={() => onGoTo(b, c, v)}>
+                    <span className="result-ref">{ref}</span>
+                    <span className="result-text">{highlight(text)}</span>
+                    <span className="result-actions">
+                      {nivText && (
+                        <button
+                          className={`niv-btn${isOpen ? ' active' : ''}`}
+                          onClick={e => { e.stopPropagation(); setOpenNiv(isOpen ? null : i); setCopiedNiv(false); }}
+                        >NIV</button>
+                      )}
+                      <button
+                        className={`copy-btn-inline${copied === i ? ' copied' : ''}`}
+                        onClick={e => { e.stopPropagation(); copyVerse(text, ref, i); }}
+                      >{copied === i ? '✓' : '복사'}</button>
+                    </span>
+                  </div>
+                  {isOpen && nivText && (
+                    <div className="niv-popup">
+                      <span className="niv-popup-ref">{BOOK_MAP[b]?.en ?? ''} {c}:{v}</span>
+                      <span className="niv-popup-text">{nivText}</span>
+                      <button
+                        className={`copy-btn-inline${copiedNiv ? ' copied' : ''}`}
+                        onClick={e => { e.stopPropagation(); copyNiv(nivText, `${BOOK_MAP[b]?.en ?? ''} ${c}:${v}`); }}
+                      >{copiedNiv ? '✓' : 'Copy'}</button>
+                      <button className="niv-close-btn" onClick={e => { e.stopPropagation(); setOpenNiv(null); }}>×</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {results.length === 0 && <div className="no-results">검색 결과가 없습니다.</div>}
+            {visibleCount < results.length && (
+              <div ref={sentinelRef} className="load-more-sentinel">
+                {visibleCount} / {results.length}개 표시 중...
+              </div>
+            )}
           </div>
         </div>
       )}

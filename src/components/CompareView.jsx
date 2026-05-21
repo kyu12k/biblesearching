@@ -4,6 +4,7 @@ import { BOOKS, BOOK_MAP } from '../data/books';
 export default function CompareView({ bibles }) {
   const [bookId, setBookId]   = useState(1);
   const [chapter, setChapter] = useState(1);
+  const [copied, setCopied]   = useState(null);
 
   const bookInfo   = BOOK_MAP[bookId];
   const maxChapter = bookInfo?.chapters ?? 1;
@@ -22,6 +23,18 @@ export default function CompareView({ bibles }) {
       texts: versions.map((_, vi) => sets[vi]?.[i]?.[1] ?? ''),
     }));
   })();
+
+  function copyBoth(verse, texts) {
+    const ref   = `${BOOK_MAP[bookId]?.ko} ${chapter}:${verse}`;
+    const enRef = `${BOOK_MAP[bookId]?.en} ${chapter}:${verse}`;
+    const lines = versions.map((v, i) =>
+      v === 'HRV' ? `${ref} ${texts[i]}` : `${enRef} ${texts[i]}`
+    ).join('\n');
+    navigator.clipboard.writeText(lines).then(() => {
+      setCopied(verse);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  }
 
   return (
     <div className="compare-view">
@@ -46,6 +59,7 @@ export default function CompareView({ bibles }) {
             <tr>
               <th className="verse-col">절</th>
               {versions.map(v => <th key={v}>{v === 'HRV' ? '개역한글' : 'NIV'}</th>)}
+              <th className="copy-col"></th>
             </tr>
           </thead>
           <tbody>
@@ -53,10 +67,16 @@ export default function CompareView({ bibles }) {
               <tr key={verse}>
                 <td className="verse-col">{verse}</td>
                 {texts.map((t, i) => <td key={i}>{t}</td>)}
+                <td className="copy-col">
+                  <button
+                    className={`compare-copy-btn${copied === verse ? ' copied' : ''}`}
+                    onClick={() => copyBoth(verse, texts)}
+                  >{copied === verse ? '✓' : '복사'}</button>
+                </td>
               </tr>
             ))}
             {allVerses.length === 0 && (
-              <tr><td colSpan={versions.length + 1} className="empty">데이터 없음</td></tr>
+              <tr><td colSpan={versions.length + 2} className="empty">데이터 없음</td></tr>
             )}
           </tbody>
         </table>
