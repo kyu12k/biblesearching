@@ -47,6 +47,8 @@ export default function CompareView({ bibles }) {
             <option key={c} value={c}>{c}장</option>
           ))}
         </select>
+        <button className="nav-btn" onClick={() => setChapter(c => Math.max(1, c - 1))} disabled={chapter <= 1}>◀</button>
+        <button className="nav-btn" onClick={() => setChapter(c => Math.min(maxChapter, c + 1))} disabled={chapter >= maxChapter}>▶</button>
       </div>
 
       <div className="compare-title">

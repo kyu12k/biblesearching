@@ -92,7 +92,9 @@ export default function BibleReader({ bible, version, onCopy, onToast, gotoRef, 
   }
 
   function copyVerse(v, text) {
-    const name = bookInfo?.abbr ?? bookInfo?.ko;
+    const name = version === 'NIV'
+      ? (bookInfo?.en ?? bookInfo?.ko)
+      : (bookInfo?.abbr ?? bookInfo?.ko);
     navigator.clipboard.writeText(`${text} (${name} ${chapter}:${v})`);
     onToast();
   }

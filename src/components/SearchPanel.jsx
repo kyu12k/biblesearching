@@ -161,10 +161,12 @@ export default function SearchPanel({ bibles, onGoTo }) {
                 <option value="HRV">개역한글 (HRV)</option>
                 <option value="NIV">NIV (영어)</option>
               </select>
+            </div>
+            <div className="search-range-row">
               <select value={startBook} onChange={e => setStartBook(+e.target.value)}>
                 {BOOKS.map(b => <option key={b.id} value={b.id}>{b.ko}</option>)}
               </select>
-              <span>~</span>
+              <span className="range-tilde">~</span>
               <select value={endBook} onChange={e => setEndBook(+e.target.value)}>
                 {BOOKS.map(b => <option key={b.id} value={b.id}>{b.ko}</option>)}
               </select>
