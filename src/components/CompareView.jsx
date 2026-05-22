@@ -76,12 +76,14 @@ function CompareCopyModal({ bookId, chapter, verses, allVerses, versions, onClos
   );
 }
 
-export default function CompareView({ bibles, gotoRef }) {
-  const [bookId,   setBookId]   = useState(1);
-  const [chapter,  setChapter]  = useState(1);
-  const [selected, setSelected] = useState(new Set());
-  const [copyCtx,  setCopyCtx]  = useState(null);
-  const [copied,   setCopied]   = useState(null);
+export default function CompareView({ bibles, gotoRef, bookmarks, onBookmark, notes, onNote, bmColor, onToast }) {
+  const [bookId,      setBookId]      = useState(1);
+  const [chapter,     setChapter]     = useState(1);
+  const [selected,    setSelected]    = useState(new Set());
+  const [copyCtx,     setCopyCtx]     = useState(null);
+  const [copied,      setCopied]      = useState(null);
+  const [editingNote, setEditingNote] = useState(null);
+  const [noteText,    setNoteText]    = useState('');
 
   const bookInfo   = BOOK_MAP[bookId];
   const maxChapter = bookInfo?.chapters ?? 1;
@@ -115,6 +117,38 @@ export default function CompareView({ bibles, gotoRef }) {
     });
   }
 
+  function isBookmarked(v) {
+    return (bookmarks ?? []).some(bm => bm.b === bookId && bm.c === chapter && bm.v === +v);
+  }
+
+  function toggleBookmark(v, texts) {
+    const key = { b: bookId, c: chapter, v: +v };
+    if (isBookmarked(v)) {
+      onBookmark((bookmarks ?? []).filter(bm => !(bm.b === key.b && bm.c === key.c && bm.v === key.v)));
+    } else {
+      const text = (texts[0] ?? '').slice(0, 60);
+      onBookmark([...(bookmarks ?? []), { ...key, text }]);
+    }
+  }
+
+  function getNote(v) { return (notes ?? {})[`${bookId}-${chapter}-${v}`] ?? ''; }
+
+  function openNoteEditor(v) { setEditingNote(v); setNoteText(getNote(v)); }
+
+  function saveNote() {
+    const key = `${bookId}-${chapter}-${editingNote}`;
+    const next = { ...(notes ?? {}) };
+    if (noteText.trim()) next[key] = noteText.trim();
+    else delete next[key];
+    onNote(next);
+    setEditingNote(null);
+  }
+
+  function copyChapter() {
+    const allV = allVerses.map(r => r.verse);
+    setCopyCtx({ verses: allV, isChapter: true });
+  }
+
   function openCopyModal(verses) {
     setCopyCtx({ verses });
   }
@@ -132,11 +166,14 @@ export default function CompareView({ bibles, gotoRef }) {
         </select>
         <button className="nav-btn" onClick={() => setChapter(c => Math.max(1, c - 1))} disabled={chapter <= 1}>◀</button>
         <button className="nav-btn" onClick={() => setChapter(c => Math.min(maxChapter, c + 1))} disabled={chapter >= maxChapter}>▶</button>
-        {selected.size > 0 && (
-          <button className="copy-btn" onClick={() =>
-            openCopyModal([...selected].sort((a, b) => +a - +b))
-          }>{selected.size}절 복사</button>
-        )}
+        <div className="reader-nav-right">
+          <button className="icon-btn" onClick={copyChapter} title="장 전체 복사">📋</button>
+          {selected.size > 0 && (
+            <button className="copy-btn" onClick={() =>
+              openCopyModal([...selected].sort((a, b) => +a - +b))
+            }>{selected.size}절 복사</button>
+          )}
+        </div>
       </div>
 
       <div className="compare-title">
@@ -144,33 +181,79 @@ export default function CompareView({ bibles, gotoRef }) {
       </div>
 
       <div className="compare-verses">
-        {allVerses.map(({ verse, texts }) => (
-          <div
-            key={verse}
-            className={`compare-verse-block${selected.has(verse) ? ' compare-selected' : ''}`}
-            onClick={() => toggleVerse(verse)}
-          >
-            <div className="compare-verse-header">
-              <span className="compare-verse-num">{verse}</span>
-              <div className="compare-verse-texts">
-                {versions.map((v, i) => (
-                  <div key={v} className="compare-verse-row">
-                    <span className="compare-verse-label">{v === 'HRV' ? '한' : 'EN'}</span>
-                    <span className={`compare-verse-text${v === 'NIV' ? ' niv' : ''}`}>{texts[i]}</span>
+        {allVerses.map(({ verse, texts }) => {
+          const bmd     = isBookmarked(verse);
+          const note    = getNote(verse);
+          const bmStyle = bmd ? { backgroundColor: bmColor ?? '#a8d8f0' } : {};
+          return (
+            <div
+              key={verse}
+              className={`compare-verse-block${selected.has(verse) ? ' compare-selected' : ''}`}
+              style={bmStyle}
+              onClick={() => toggleVerse(verse)}
+            >
+              <div className="compare-verse-header">
+                <span className="compare-verse-num">{verse}</span>
+                <div className="compare-verse-texts">
+                  {versions.map((v, i) => (
+                    <div key={v} className="compare-verse-row">
+                      <span className="compare-verse-label">{v === 'HRV' ? '한' : 'EN'}</span>
+                      <span className={`compare-verse-text${v === 'NIV' ? ' niv' : ''}`}>{texts[i]}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="compare-verse-actions" onClick={e => e.stopPropagation()}>
+                  <button
+                    className={`action-btn${bmd ? ' bookmarked' : ''}`}
+                    onClick={() => toggleBookmark(verse, texts)}
+                    title={bmd ? '북마크 해제' : '북마크'}
+                  >★</button>
+                  <button
+                    className={`action-btn${note ? ' has-note' : ''}`}
+                    onClick={() => openNoteEditor(verse)}
+                    title="메모"
+                  >✎</button>
+                  <button
+                    className={`action-btn${copied === verse ? ' copied' : ''}`}
+                    onClick={() => openCopyModal([verse])}
+                    title="구절 복사"
+                  >⎘</button>
+                </div>
+              </div>
+              {note && editingNote !== verse && (
+                <div className="verse-note" onClick={e => { e.stopPropagation(); openNoteEditor(verse); }}>
+                  📝 {note}
+                </div>
+              )}
+              {editingNote === verse && (
+                <div className="note-editor" onClick={e => e.stopPropagation()}>
+                  <textarea
+                    autoFocus
+                    value={noteText}
+                    onChange={e => setNoteText(e.target.value)}
+                    placeholder="메모를 입력하세요..."
+                    rows={3}
+                  />
+                  <div className="note-editor-btns">
+                    <button onClick={saveNote}>저장</button>
+                    <button onClick={() => setEditingNote(null)}>취소</button>
+                    {getNote(verse) && (
+                      <button className="delete-note" onClick={() => {
+                        const next = { ...(notes ?? {}) };
+                        delete next[`${bookId}-${chapter}-${verse}`];
+                        onNote(next);
+                        setEditingNote(null);
+                      }}>삭제</button>
+                    )}
                   </div>
-                ))}
-              </div>
-              <div className="compare-verse-actions" onClick={e => e.stopPropagation()}>
-                <button
-                  className={`action-btn${copied === verse ? ' copied' : ''}`}
-                  onClick={() => openCopyModal([verse])}
-                  title="구절 복사"
-                >⎘</button>
-              </div>
+                </div>
+              )}
             </div>
-          </div>
-        ))}
-        {allVerses.length === 0 && <div className="empty" style={{padding:'24px',textAlign:'center',color:'var(--muted)'}}>데이터 없음</div>}
+          );
+        })}
+        {allVerses.length === 0 && (
+          <div className="empty" style={{ padding: '24px', textAlign: 'center', color: 'var(--muted)' }}>데이터 없음</div>
+        )}
       </div>
 
       {copyCtx && (
@@ -188,6 +271,7 @@ export default function CompareView({ bibles, gotoRef }) {
             }
             setSelected(new Set());
             setCopyCtx(null);
+            onToast?.();
           }}
         />
       )}

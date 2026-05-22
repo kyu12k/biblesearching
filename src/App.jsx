@@ -168,7 +168,16 @@ export default function App() {
           <SearchPanel bibles={bibles} onGoTo={(b, c, v) => navigate(b, c, v)} />
         </div>
         <div className={`tab-content${tab === 'compare' ? ' active' : ''}`}>
-          <CompareView bibles={bibles} gotoRef={compareGotoRef} />
+          <CompareView
+            bibles={bibles}
+            gotoRef={compareGotoRef}
+            bookmarks={bookmarks}
+            onBookmark={setBookmarks}
+            notes={notes}
+            onNote={setNotes}
+            bmColor={bmColor}
+            onToast={() => { setToast(true); setTimeout(() => setToast(false), 2000); }}
+          />
         </div>
       </main>
 
