@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BOOKS, BOOK_MAP } from '../data/books';
 
-function buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseNum, showVersion, layout }) {
+function buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseNum, showVersion, showParen, eachLine, layout }) {
   const bookInfo = BOOK_MAP[bookId];
   const hrvName  = bookInfo?.abbr ?? bookInfo?.ko;
   const nivName  = bookInfo?.en   ?? bookInfo?.ko;
@@ -15,19 +15,21 @@ function buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseN
   if (layout === 'grouped') {
     const loc = verses.length === 1 ? verses[0] : `${verses[0]}-${verses[verses.length - 1]}`;
     return versions.map((v, vi) => {
-      const name = v === 'NIV' ? nivName : hrvName;
-      const ref  = `${name} ${chapter}:${loc}${vTag(v)}`;
-      const body = verseRows.map(({ verse, texts }) =>
+      const name  = v === 'NIV' ? nivName : hrvName;
+      const ref   = `${name} ${chapter}:${loc}${vTag(v)}`;
+      const lines = verseRows.map(({ verse, texts }) =>
         (showVerseNum ? `${verse} ` : '') + texts[vi]
-      ).join(' ');
-      return `${ref}\n${body}`;
+      );
+      const body = eachLine ? lines.join('\n') : lines.join(' ');
+      return showParen ? `${body} (${ref})` : `${ref}\n${body}`;
     }).join('\n\n');
   } else {
     return verseRows.map(({ verse, texts }) =>
       versions.map((v, vi) => {
         const name = v === 'NIV' ? nivName : hrvName;
         const ref  = `${name} ${chapter}:${verse}${vTag(v)}`;
-        return (showVerseNum ? `${verse} ` : '') + `${texts[vi]} (${ref})`;
+        const pfx  = showVerseNum ? `${verse} ` : '';
+        return showParen ? `${pfx}${texts[vi]} (${ref})` : `${ref}\n${pfx}${texts[vi]}`;
       }).join(' / ')
     ).join('\n');
   }
@@ -36,10 +38,12 @@ function buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseN
 function CompareCopyModal({ bookId, chapter, verses, allVerses, versions, onClose, onCopied }) {
   const [showVerseNum, setShowVerseNum] = useState(false);
   const [showVersion,  setShowVersion]  = useState(true);
+  const [showParen,    setShowParen]    = useState(true);
+  const [eachLine,     setEachLine]     = useState(false);
   const [layout,       setLayout]       = useState('grouped');
 
   const isMulti = verses.length > 1;
-  const preview = buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseNum, showVersion, layout });
+  const preview = buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseNum, showVersion, showParen, eachLine, layout });
 
   async function copy() {
     await navigator.clipboard.writeText(preview);
@@ -54,7 +58,9 @@ function CompareCopyModal({ bookId, chapter, verses, allVerses, versions, onClos
           <button className="modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="modal-options">
+          <label><input type="checkbox" checked={showParen}    onChange={e => setShowParen(e.target.checked)}    /> 출처를 괄호 뒤에</label>
           <label><input type="checkbox" checked={showVerseNum} onChange={e => setShowVerseNum(e.target.checked)} /> 절 번호 포함</label>
+          <label><input type="checkbox" checked={eachLine}     onChange={e => setEachLine(e.target.checked)}     /> 절마다 줄바꿈</label>
           <label><input type="checkbox" checked={showVersion}  onChange={e => setShowVersion(e.target.checked)}  /> 버전 표시</label>
           {isMulti && (
             <div className="modal-option-group">
