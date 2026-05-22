@@ -1,22 +1,52 @@
 import { useState, useEffect } from 'react';
 import { BOOKS, BOOK_MAP } from '../data/books';
 
-function CompareCopyModal({ bookId, chapter, verse, texts, versions, onClose, onCopied }) {
+function buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseNum, showVersion, layout }) {
   const bookInfo = BOOK_MAP[bookId];
-  const [showVerseNum, setShowVerseNum] = useState(false);
-  const [showVersion,  setShowVersion]  = useState(true);
-  const [separator,    setSeparator]    = useState('newline'); // 'newline' | 'slash'
+  const hrvName  = bookInfo?.abbr ?? bookInfo?.ko;
+  const nivName  = bookInfo?.en   ?? bookInfo?.ko;
 
-  const lines = versions.map((v, i) => {
-    const isNiv   = v === 'NIV';
-    const name    = isNiv ? (bookInfo?.en ?? bookInfo?.ko) : (bookInfo?.abbr ?? bookInfo?.ko);
-    const vTag    = showVersion ? ` ${v}` : '';
-    const ref     = `${name} ${chapter}:${verse}${vTag}`;
-    const numPfx  = showVerseNum ? `${verse} ` : '';
-    return `${numPfx}${texts[i]} (${ref})`;
+  const vTag = (v) => showVersion ? ` ${v}` : '';
+
+  const verseRows = verses.map(verse => {
+    const row = allVerses.find(r => r.verse === verse);
+    return { verse, texts: row?.texts ?? versions.map(() => '') };
   });
 
-  const preview = separator === 'slash' ? lines.join(' / ') : lines.join('\n');
+  if (layout === 'grouped') {
+    // A안: 버전별 묶음
+    const firstV = verses[0];
+    const lastV  = verses[verses.length - 1];
+    const loc    = firstV === lastV ? firstV : `${firstV}-${lastV}`;
+    return versions.map((v, vi) => {
+      const name = v === 'NIV' ? nivName : hrvName;
+      const ref  = `${name} ${chapter}:${loc}${vTag(v)}`;
+      const body = verseRows.map(({ verse, texts }) => {
+        const pfx = showVerseNum ? `${verse} ` : '';
+        return `${pfx}${texts[vi]}`;
+      }).join(' ');
+      return `${ref}\n${body}`;
+    }).join('\n\n');
+  } else {
+    // B안: 절 단위 교차
+    return verseRows.map(({ verse, texts }) => {
+      return versions.map((v, vi) => {
+        const name  = v === 'NIV' ? nivName : hrvName;
+        const ref   = `${name} ${chapter}:${verse}${vTag(v)}`;
+        const pfx   = showVerseNum ? `${verse} ` : '';
+        return `${pfx}${texts[vi]} (${ref})`;
+      }).join(' / ');
+    }).join('\n');
+  }
+}
+
+function CompareCopyModal({ bookId, chapter, verses, allVerses, versions, onClose, onCopied }) {
+  const [showVerseNum, setShowVerseNum] = useState(false);
+  const [showVersion,  setShowVersion]  = useState(true);
+  const [layout,       setLayout]       = useState('grouped'); // 'grouped' | 'interleaved'
+
+  const isMulti  = verses.length > 1;
+  const preview  = buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseNum, showVersion, layout });
 
   async function copy() {
     await navigator.clipboard.writeText(preview);
@@ -32,12 +62,20 @@ function CompareCopyModal({ bookId, chapter, verse, texts, versions, onClose, on
         </div>
         <div className="modal-options">
           <label><input type="checkbox" checked={showVerseNum} onChange={e => setShowVerseNum(e.target.checked)} /> 절 번호 포함</label>
-          <label><input type="checkbox" checked={showVersion}  onChange={e => setShowVersion(e.target.checked)}  /> 버전 표시 (NIV / HRV)</label>
-          <div className="modal-option-group">
-            <span>구분 방식</span>
-            <label><input type="radio" name="sep" value="newline" checked={separator === 'newline'} onChange={() => setSeparator('newline')} /> 줄바꿈</label>
-            <label><input type="radio" name="sep" value="slash"   checked={separator === 'slash'}   onChange={() => setSeparator('slash')}   /> 슬래시 (/)</label>
-          </div>
+          <label><input type="checkbox" checked={showVersion}  onChange={e => setShowVersion(e.target.checked)}  /> 버전 표시</label>
+          {isMulti && (
+            <div className="modal-option-group">
+              <span>배열 방식</span>
+              <label>
+                <input type="radio" name="layout" value="grouped" checked={layout === 'grouped'} onChange={() => setLayout('grouped')} />
+                A — 버전별 묶음
+              </label>
+              <label>
+                <input type="radio" name="layout" value="interleaved" checked={layout === 'interleaved'} onChange={() => setLayout('interleaved')} />
+                B — 절 단위 교차
+              </label>
+            </div>
+          )}
         </div>
         <div className="modal-preview">
           <div className="preview-label">미리보기</div>
@@ -52,15 +90,17 @@ function CompareCopyModal({ bookId, chapter, verse, texts, versions, onClose, on
 }
 
 export default function CompareView({ bibles, gotoRef }) {
-  const [bookId,  setBookId]  = useState(1);
-  const [chapter, setChapter] = useState(1);
-  const [copyCtx, setCopyCtx] = useState(null);
-  const [copied,  setCopied]  = useState(null);
+  const [bookId,   setBookId]   = useState(1);
+  const [chapter,  setChapter]  = useState(1);
+  const [selected, setSelected] = useState(new Set());
+  const [copyCtx,  setCopyCtx]  = useState(null);
+  const [copied,   setCopied]   = useState(null);
 
   const bookInfo   = BOOK_MAP[bookId];
   const maxChapter = bookInfo?.chapters ?? 1;
 
-  useEffect(() => { setChapter(1); }, [bookId]);
+  useEffect(() => { setChapter(1); setSelected(new Set()); }, [bookId]);
+  useEffect(() => { setSelected(new Set()); }, [chapter]);
 
   useEffect(() => {
     if (!gotoRef) return;
@@ -81,8 +121,16 @@ export default function CompareView({ bibles, gotoRef }) {
     }));
   })();
 
-  function openCopyModal(verse, texts) {
-    setCopyCtx({ verse, texts });
+  function toggleVerse(verse) {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(verse) ? next.delete(verse) : next.add(verse);
+      return next;
+    });
+  }
+
+  function openCopyModal(verses) {
+    setCopyCtx({ verses });
   }
 
   return (
@@ -98,6 +146,11 @@ export default function CompareView({ bibles, gotoRef }) {
         </select>
         <button className="nav-btn" onClick={() => setChapter(c => Math.max(1, c - 1))} disabled={chapter <= 1}>◀</button>
         <button className="nav-btn" onClick={() => setChapter(c => Math.min(maxChapter, c + 1))} disabled={chapter >= maxChapter}>▶</button>
+        {selected.size > 0 && (
+          <button className="copy-btn" onClick={() =>
+            openCopyModal([...selected].sort((a, b) => +a - +b))
+          }>{selected.size}절 복사</button>
+        )}
       </div>
 
       <div className="compare-title">
@@ -115,13 +168,17 @@ export default function CompareView({ bibles, gotoRef }) {
           </thead>
           <tbody>
             {allVerses.map(({ verse, texts }) => (
-              <tr key={verse}>
+              <tr
+                key={verse}
+                className={selected.has(verse) ? 'compare-selected' : ''}
+                onClick={() => toggleVerse(verse)}
+              >
                 <td className="verse-col">{verse}</td>
                 {texts.map((t, i) => <td key={i}>{t}</td>)}
-                <td className="copy-col">
+                <td className="copy-col" onClick={e => e.stopPropagation()}>
                   <button
                     className={`compare-copy-btn${copied === verse ? ' copied' : ''}`}
-                    onClick={() => openCopyModal(verse, texts)}
+                    onClick={() => openCopyModal([verse])}
                   >{copied === verse ? '✓' : '복사'}</button>
                 </td>
               </tr>
@@ -137,14 +194,17 @@ export default function CompareView({ bibles, gotoRef }) {
         <CompareCopyModal
           bookId={bookId}
           chapter={chapter}
-          verse={copyCtx.verse}
-          texts={copyCtx.texts}
+          verses={copyCtx.verses}
+          allVerses={allVerses}
           versions={versions}
           onClose={() => setCopyCtx(null)}
           onCopied={() => {
-            setCopied(copyCtx.verse);
+            if (copyCtx.verses.length === 1) {
+              setCopied(copyCtx.verses[0]);
+              setTimeout(() => setCopied(null), 1500);
+            }
+            setSelected(new Set());
             setCopyCtx(null);
-            setTimeout(() => setCopied(null), 1500);
           }}
         />
       )}

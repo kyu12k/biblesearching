@@ -342,6 +342,8 @@ mark { background: var(--mark); border-radius: 2px; }
 }
 .compare-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.65; }
 .compare-table tr:hover td { background: var(--select); }
+.compare-table tr.compare-selected td { background: var(--mark); }
+.compare-table tr.compare-selected:hover td { filter: brightness(0.95); }
 .compare-table .verse-col { width: 40px; text-align: center; color: var(--accent2); font-weight: 700; font-size: 12px; }
 .compare-table .copy-col { width: 48px; text-align: center; }
 .compare-copy-btn {
