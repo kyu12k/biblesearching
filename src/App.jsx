@@ -23,8 +23,9 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [copyCtx, setCopyCtx] = useState(null);
   const [toast, setToast] = useState(false);
-  const [gotoRef, setGotoRef] = useState(null);
-  const [activePanel, setActivePanel] = useState(null);
+  const [gotoRef,        setGotoRef]        = useState(null);
+  const [compareGotoRef, setCompareGotoRef] = useState(null);
+  const [activePanel,    setActivePanel]    = useState(null);
 
   // Quick navigation input
   const [quickInput, setQuickInput] = useState('');
@@ -61,6 +62,10 @@ export default function App() {
   }, []);
 
   function navigate(b, c, v = null) {
+    if (tab === 'compare') {
+      setCompareGotoRef({ b, c });
+      return;
+    }
     setGotoRef({ b, c, v });
     setTab('read');
     // Add to history (deduplicated, newest first, max 30)
@@ -163,7 +168,7 @@ export default function App() {
           <SearchPanel bibles={bibles} onGoTo={(b, c, v) => navigate(b, c, v)} />
         </div>
         <div className={`tab-content${tab === 'compare' ? ' active' : ''}`}>
-          <CompareView bibles={bibles} />
+          <CompareView bibles={bibles} gotoRef={compareGotoRef} />
         </div>
       </main>
 

@@ -1,15 +1,72 @@
 import { useState, useEffect } from 'react';
 import { BOOKS, BOOK_MAP } from '../data/books';
 
-export default function CompareView({ bibles }) {
-  const [bookId, setBookId]   = useState(1);
+function CompareCopyModal({ bookId, chapter, verse, texts, versions, onClose, onCopied }) {
+  const bookInfo = BOOK_MAP[bookId];
+  const [showVerseNum, setShowVerseNum] = useState(false);
+  const [showVersion,  setShowVersion]  = useState(true);
+  const [separator,    setSeparator]    = useState('newline'); // 'newline' | 'slash'
+
+  const lines = versions.map((v, i) => {
+    const isNiv   = v === 'NIV';
+    const name    = isNiv ? (bookInfo?.en ?? bookInfo?.ko) : (bookInfo?.abbr ?? bookInfo?.ko);
+    const vTag    = showVersion ? ` ${v}` : '';
+    const ref     = `${name} ${chapter}:${verse}${vTag}`;
+    const numPfx  = showVerseNum ? `${verse} ` : '';
+    return `${numPfx}${texts[i]} (${ref})`;
+  });
+
+  const preview = separator === 'slash' ? lines.join(' / ') : lines.join('\n');
+
+  async function copy() {
+    await navigator.clipboard.writeText(preview);
+    onCopied();
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>한+영 복사 옵션</h3>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-options">
+          <label><input type="checkbox" checked={showVerseNum} onChange={e => setShowVerseNum(e.target.checked)} /> 절 번호 포함</label>
+          <label><input type="checkbox" checked={showVersion}  onChange={e => setShowVersion(e.target.checked)}  /> 버전 표시 (NIV / HRV)</label>
+          <div className="modal-option-group">
+            <span>구분 방식</span>
+            <label><input type="radio" name="sep" value="newline" checked={separator === 'newline'} onChange={() => setSeparator('newline')} /> 줄바꿈</label>
+            <label><input type="radio" name="sep" value="slash"   checked={separator === 'slash'}   onChange={() => setSeparator('slash')}   /> 슬래시 (/)</label>
+          </div>
+        </div>
+        <div className="modal-preview">
+          <div className="preview-label">미리보기</div>
+          <pre className="preview-text">{preview}</pre>
+        </div>
+        <div className="modal-footer">
+          <button className="copy-confirm-btn" onClick={copy}>클립보드에 복사</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function CompareView({ bibles, gotoRef }) {
+  const [bookId,  setBookId]  = useState(1);
   const [chapter, setChapter] = useState(1);
-  const [copied, setCopied]   = useState(null);
+  const [copyCtx, setCopyCtx] = useState(null);
+  const [copied,  setCopied]  = useState(null);
 
   const bookInfo   = BOOK_MAP[bookId];
   const maxChapter = bookInfo?.chapters ?? 1;
 
   useEffect(() => { setChapter(1); }, [bookId]);
+
+  useEffect(() => {
+    if (!gotoRef) return;
+    setBookId(gotoRef.b);
+    setChapter(gotoRef.c);
+  }, [gotoRef]);
 
   const versions = Object.keys(bibles).filter(v => bibles[v]);
   const allVerses = (() => {
@@ -24,16 +81,8 @@ export default function CompareView({ bibles }) {
     }));
   })();
 
-  function copyBoth(verse, texts) {
-    const ref   = `${BOOK_MAP[bookId]?.ko} ${chapter}:${verse}`;
-    const enRef = `${BOOK_MAP[bookId]?.en} ${chapter}:${verse}`;
-    const lines = versions.map((v, i) =>
-      v === 'HRV' ? `${ref} ${texts[i]}` : `${enRef} ${texts[i]}`
-    ).join('\n');
-    navigator.clipboard.writeText(lines).then(() => {
-      setCopied(verse);
-      setTimeout(() => setCopied(null), 1500);
-    });
+  function openCopyModal(verse, texts) {
+    setCopyCtx({ verse, texts });
   }
 
   return (
@@ -72,7 +121,7 @@ export default function CompareView({ bibles }) {
                 <td className="copy-col">
                   <button
                     className={`compare-copy-btn${copied === verse ? ' copied' : ''}`}
-                    onClick={() => copyBoth(verse, texts)}
+                    onClick={() => openCopyModal(verse, texts)}
                   >{copied === verse ? '✓' : '복사'}</button>
                 </td>
               </tr>
@@ -83,6 +132,22 @@ export default function CompareView({ bibles }) {
           </tbody>
         </table>
       </div>
+
+      {copyCtx && (
+        <CompareCopyModal
+          bookId={bookId}
+          chapter={chapter}
+          verse={copyCtx.verse}
+          texts={copyCtx.texts}
+          versions={versions}
+          onClose={() => setCopyCtx(null)}
+          onCopied={() => {
+            setCopied(copyCtx.verse);
+            setCopyCtx(null);
+            setTimeout(() => setCopied(null), 1500);
+          }}
+        />
+      )}
     </div>
   );
 }
