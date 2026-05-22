@@ -5,8 +5,7 @@ function buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseN
   const bookInfo = BOOK_MAP[bookId];
   const hrvName  = bookInfo?.abbr ?? bookInfo?.ko;
   const nivName  = bookInfo?.en   ?? bookInfo?.ko;
-
-  const vTag = (v) => showVersion ? ` ${v}` : '';
+  const vTag     = (v) => showVersion ? ` ${v}` : '';
 
   const verseRows = verses.map(verse => {
     const row = allVerses.find(r => r.verse === verse);
@@ -14,39 +13,33 @@ function buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseN
   });
 
   if (layout === 'grouped') {
-    // A안: 버전별 묶음
-    const firstV = verses[0];
-    const lastV  = verses[verses.length - 1];
-    const loc    = firstV === lastV ? firstV : `${firstV}-${lastV}`;
+    const loc = verses.length === 1 ? verses[0] : `${verses[0]}-${verses[verses.length - 1]}`;
     return versions.map((v, vi) => {
       const name = v === 'NIV' ? nivName : hrvName;
       const ref  = `${name} ${chapter}:${loc}${vTag(v)}`;
-      const body = verseRows.map(({ verse, texts }) => {
-        const pfx = showVerseNum ? `${verse} ` : '';
-        return `${pfx}${texts[vi]}`;
-      }).join(' ');
+      const body = verseRows.map(({ verse, texts }) =>
+        (showVerseNum ? `${verse} ` : '') + texts[vi]
+      ).join(' ');
       return `${ref}\n${body}`;
     }).join('\n\n');
   } else {
-    // B안: 절 단위 교차
-    return verseRows.map(({ verse, texts }) => {
-      return versions.map((v, vi) => {
-        const name  = v === 'NIV' ? nivName : hrvName;
-        const ref   = `${name} ${chapter}:${verse}${vTag(v)}`;
-        const pfx   = showVerseNum ? `${verse} ` : '';
-        return `${pfx}${texts[vi]} (${ref})`;
-      }).join(' / ');
-    }).join('\n');
+    return verseRows.map(({ verse, texts }) =>
+      versions.map((v, vi) => {
+        const name = v === 'NIV' ? nivName : hrvName;
+        const ref  = `${name} ${chapter}:${verse}${vTag(v)}`;
+        return (showVerseNum ? `${verse} ` : '') + `${texts[vi]} (${ref})`;
+      }).join(' / ')
+    ).join('\n');
   }
 }
 
 function CompareCopyModal({ bookId, chapter, verses, allVerses, versions, onClose, onCopied }) {
   const [showVerseNum, setShowVerseNum] = useState(false);
   const [showVersion,  setShowVersion]  = useState(true);
-  const [layout,       setLayout]       = useState('grouped'); // 'grouped' | 'interleaved'
+  const [layout,       setLayout]       = useState('grouped');
 
-  const isMulti  = verses.length > 1;
-  const preview  = buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseNum, showVersion, layout });
+  const isMulti = verses.length > 1;
+  const preview = buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseNum, showVersion, layout });
 
   async function copy() {
     await navigator.clipboard.writeText(preview);
@@ -66,14 +59,8 @@ function CompareCopyModal({ bookId, chapter, verses, allVerses, versions, onClos
           {isMulti && (
             <div className="modal-option-group">
               <span>배열 방식</span>
-              <label>
-                <input type="radio" name="layout" value="grouped" checked={layout === 'grouped'} onChange={() => setLayout('grouped')} />
-                A — 버전별 묶음
-              </label>
-              <label>
-                <input type="radio" name="layout" value="interleaved" checked={layout === 'interleaved'} onChange={() => setLayout('interleaved')} />
-                B — 절 단위 교차
-              </label>
+              <label><input type="radio" name="layout" value="grouped"     checked={layout === 'grouped'}     onChange={() => setLayout('grouped')}     /> A — 버전별 묶음</label>
+              <label><input type="radio" name="layout" value="interleaved" checked={layout === 'interleaved'} onChange={() => setLayout('interleaved')} /> B — 절 단위 교차</label>
             </div>
           )}
         </div>
@@ -101,7 +88,6 @@ export default function CompareView({ bibles, gotoRef }) {
 
   useEffect(() => { setChapter(1); setSelected(new Set()); }, [bookId]);
   useEffect(() => { setSelected(new Set()); }, [chapter]);
-
   useEffect(() => {
     if (!gotoRef) return;
     setBookId(gotoRef.b);
@@ -157,37 +143,34 @@ export default function CompareView({ bibles, gotoRef }) {
         {bookInfo?.ko} {chapter}장 — 버전 비교
       </div>
 
-      <div className="compare-table-wrap">
-        <table className="compare-table">
-          <thead>
-            <tr>
-              <th className="verse-col">절</th>
-              {versions.map(v => <th key={v}>{v === 'HRV' ? '개역한글' : 'NIV'}</th>)}
-              <th className="copy-col"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {allVerses.map(({ verse, texts }) => (
-              <tr
-                key={verse}
-                className={selected.has(verse) ? 'compare-selected' : ''}
-                onClick={() => toggleVerse(verse)}
-              >
-                <td className="verse-col">{verse}</td>
-                {texts.map((t, i) => <td key={i}>{t}</td>)}
-                <td className="copy-col" onClick={e => e.stopPropagation()}>
-                  <button
-                    className={`compare-copy-btn${copied === verse ? ' copied' : ''}`}
-                    onClick={() => openCopyModal([verse])}
-                  >{copied === verse ? '✓' : '복사'}</button>
-                </td>
-              </tr>
-            ))}
-            {allVerses.length === 0 && (
-              <tr><td colSpan={versions.length + 2} className="empty">데이터 없음</td></tr>
-            )}
-          </tbody>
-        </table>
+      <div className="compare-verses">
+        {allVerses.map(({ verse, texts }) => (
+          <div
+            key={verse}
+            className={`compare-verse-block${selected.has(verse) ? ' compare-selected' : ''}`}
+            onClick={() => toggleVerse(verse)}
+          >
+            <div className="compare-verse-header">
+              <span className="compare-verse-num">{verse}</span>
+              <div className="compare-verse-texts">
+                {versions.map((v, i) => (
+                  <div key={v} className="compare-verse-row">
+                    <span className="compare-verse-label">{v === 'HRV' ? '한' : 'EN'}</span>
+                    <span className={`compare-verse-text${v === 'NIV' ? ' niv' : ''}`}>{texts[i]}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="compare-verse-actions" onClick={e => e.stopPropagation()}>
+                <button
+                  className={`action-btn${copied === verse ? ' copied' : ''}`}
+                  onClick={() => openCopyModal([verse])}
+                  title="구절 복사"
+                >⎘</button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {allVerses.length === 0 && <div className="empty" style={{padding:'24px',textAlign:'center',color:'var(--muted)'}}>데이터 없음</div>}
       </div>
 
       {copyCtx && (

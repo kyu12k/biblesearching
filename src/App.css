@@ -323,8 +323,9 @@ mark { background: var(--mark); border-radius: 2px; }
 /* ── CompareView ───────────────────────────────────────────── */
 .compare-view { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
 .compare-nav {
-  display: flex; gap: 8px; padding: 10px 14px;
+  display: flex; gap: 8px; padding: 10px 14px; flex-wrap: wrap;
   background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  align-items: center;
 }
 .compare-nav select {
   padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius);
@@ -334,18 +335,32 @@ mark { background: var(--mark); border-radius: 2px; }
   padding: 8px 16px; font-size: 15px; font-weight: 600; color: var(--primary);
   background: var(--select); border-bottom: 1px solid var(--border); flex-shrink: 0;
 }
-.compare-table-wrap { flex: 1; overflow: auto; }
-.compare-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.compare-table th {
-  position: sticky; top: 0; background: var(--primary); color: #fff;
-  padding: 8px 12px; text-align: left; font-weight: 600; z-index: 1;
+.compare-verses { flex: 1; overflow-y: auto; }
+.compare-verse-block {
+  padding: 10px 16px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background .1s;
 }
-.compare-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.65; }
-.compare-table tr:hover td { background: var(--select); }
-.compare-table tr.compare-selected td { background: var(--mark); }
-.compare-table tr.compare-selected:hover td { filter: brightness(0.95); }
-.compare-table .verse-col { width: 40px; text-align: center; color: var(--accent2); font-weight: 700; font-size: 12px; }
-.compare-table .copy-col { width: 48px; text-align: center; }
+.compare-verse-block:hover { background: var(--select); }
+.compare-verse-block.compare-selected { background: var(--mark); }
+.compare-verse-block.compare-selected:hover { filter: brightness(0.96); }
+.compare-verse-header {
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.compare-verse-num {
+  min-width: 28px; font-size: 12px; font-weight: 700;
+  color: var(--accent2); flex-shrink: 0; padding-top: 3px; text-align: right;
+}
+.compare-verse-texts { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.compare-verse-row { display: flex; gap: 8px; align-items: baseline; }
+.compare-verse-label {
+  font-size: 10px; font-weight: 700; color: var(--muted);
+  flex-shrink: 0; min-width: 28px; text-transform: uppercase;
+}
+.compare-verse-text { font-size: var(--font-size-verse, 15px); line-height: 1.65; }
+.compare-verse-text.niv { font-style: italic; color: var(--text); opacity: .9; }
+.compare-verse-actions {
+  display: flex; gap: 4px; flex-shrink: 0; padding-top: 2px;
+}
 .compare-copy-btn {
   font-size: 11px; padding: 2px 7px; border-radius: 4px; cursor: pointer;
   border: 1px solid var(--border); color: var(--muted); background: transparent;
