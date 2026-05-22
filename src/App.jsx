@@ -70,10 +70,10 @@ export default function App() {
     setTab('read');
     // Add to history (deduplicated, newest first, max 30)
     const entry = {
-      b, c,
+      b, c, v,
       time: new Date().toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
     };
-    setHistory(prev => [entry, ...prev.filter(h => !(h.b === b && h.c === c))].slice(0, 30));
+    setHistory(prev => [entry, ...prev.filter(h => !(h.b === b && h.c === c && h.v === v))].slice(0, 30));
   }
 
   function handleQuickNav(e) {
@@ -200,7 +200,7 @@ export default function App() {
         onNote={setNotes}
         onGoToNote={(b, c, v) => navigate(b, c, v)}
         history={history}
-        onGoToHistory={h => navigate(h.b, h.c)}
+        onGoToHistory={h => navigate(h.b, h.c, h.v)}
         onRemoveHistory={removeHistory}
         darkMode={darkMode}
         onDarkMode={setDarkMode}
