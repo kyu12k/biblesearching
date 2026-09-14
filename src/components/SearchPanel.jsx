@@ -1,8 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { BOOKS, BOOK_MAP } from '../data/books';
 
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// 글자 사이 공백을 허용하는 정규식 ("하나님" → "하 나 님" 도 매칭). 영문은 대소문자 무시
 function makeFlexRegex(keyword) {
-  return new RegExp(keyword.split('').join('[\\s]*'), 'g');
+  return new RegExp(keyword.split('').map(escapeRegex).join('\\s*'), 'gi');
 }
 
 // '의' 붙여쓰기/띄어쓰기 변형 생성
@@ -13,10 +18,10 @@ function eiVariants(keyword) {
   return [...set];
 }
 
-function matchKeyword(text, keyword) {
-  return eiVariants(keyword).some(variant =>
-    text.includes(variant) || makeFlexRegex(variant).test(text)
-  );
+// 키워드 하나에 대한 매처 (변형별 정규식을 미리 컴파일해 재사용)
+function makeMatcher(keyword) {
+  const regexes = eiVariants(keyword).map(makeFlexRegex);
+  return text => regexes.some(re => { re.lastIndex = 0; return re.test(text); });
 }
 
 export default function SearchPanel({ bibles, onGoTo }) {
@@ -26,6 +31,7 @@ export default function SearchPanel({ bibles, onGoTo }) {
   const [endBook, setEndBook]     = useState(66);
   const [version, setVersion]     = useState('HRV');
   const [results, setResults]       = useState(null);
+  const [resultVersion, setResultVersion] = useState('HRV'); // 결과를 만든 시점의 버전
   const [searching, setSearching]   = useState(false);
   const [visibleCount, setVisibleCount] = useState(100);
   const [optionsOpen, setOptionsOpen] = useState(true);
@@ -58,9 +64,14 @@ export default function SearchPanel({ bibles, onGoTo }) {
     });
   }
 
-  function getNivText(b, c, v) {
-    try { return bibles.NIV?.[String(b)]?.[String(c)]?.[String(v)] ?? null; }
-    catch { return null; }
+  // 검색한 버전의 반대편 버전 (HRV로 검색 → NIV 팝업, NIV로 검색 → 개역한글 팝업)
+  const otherVersion = resultVersion === 'NIV' ? 'HRV' : 'NIV';
+  function getOtherText(b, c, v) {
+    return bibles[otherVersion]?.[String(b)]?.[String(c)]?.[String(v)] ?? null;
+  }
+  function otherRef(b, c, v) {
+    const name = otherVersion === 'NIV' ? BOOK_MAP[b]?.en : BOOK_MAP[b]?.ko;
+    return `${name ?? ''} ${c}:${v}`;
   }
 
   function search() {
@@ -69,35 +80,38 @@ export default function SearchPanel({ bibles, onGoTo }) {
     setSearching(true);
     setResults(null);
     setTimeout(() => {
-      const bible = bibles[version];
-      if (!bible) { setSearching(false); return; }
-      const found = [];
-      for (let b = startBook; b <= endBook; b++) {
-        const bookData = bible[String(b)];
-        if (!bookData) continue;
-        for (const [c, chData] of Object.entries(bookData)) {
-          for (const [v, text] of Object.entries(chData)) {
-            const match = isAnd
-              ? keywords.every(k => matchKeyword(text, k))
-              : keywords.some(k => matchKeyword(text, k));
-            if (match) found.push({ b, c: +c, v: +v, text });
+      try {
+        const bible = bibles[version];
+        if (!bible) return;
+        const found = [];
+        const matchers = keywords.map(makeMatcher);
+        const [from, to] = startBook <= endBook ? [startBook, endBook] : [endBook, startBook];
+        for (let b = from; b <= to; b++) {
+          const bookData = bible[String(b)];
+          if (!bookData) continue;
+          for (const [c, chData] of Object.entries(bookData)) {
+            for (const [v, text] of Object.entries(chData)) {
+              const match = isAnd
+                ? matchers.every(m => m(text))
+                : matchers.some(m => m(text));
+              if (match) found.push({ b, c: +c, v: +v, text });
+            }
           }
         }
-      }
-      // 원본 쿼리가 구절 안에 연속으로 등장하면 상위 노출
-      const phrase = query.trim();
-      const phraseVariants = eiVariants(phrase);
-      found.sort((a, b) => {
-        const aExact = phraseVariants.some(p => a.text.includes(p)) ? 0 : 1;
-        const bExact = phraseVariants.some(p => b.text.includes(p)) ? 0 : 1;
-        return aExact - bExact;
-      });
+        // 원본 쿼리가 구절 안에 연속으로 등장하면 상위 노출
+        const phrase = query.trim().toLowerCase();
+        const phraseVariants = eiVariants(phrase);
+        const isExact = r => phraseVariants.some(p => r.text.toLowerCase().includes(p));
+        found.sort((a, b) => (isExact(a) ? 0 : 1) - (isExact(b) ? 0 : 1));
 
-      setResults(found);
-      setVisibleCount(100);
-      setOpenNiv(null);
-      setOptionsOpen(false);
-      setSearching(false);
+        setResults(found);
+        setResultVersion(version);
+        setVisibleCount(100);
+        setOpenNiv(null);
+        setOptionsOpen(false);
+      } finally {
+        setSearching(false);
+      }
     }, 0);
   }
 
@@ -179,8 +193,10 @@ export default function SearchPanel({ bibles, onGoTo }) {
           <div className="result-count">{results.length}개 결과</div>
           <div className="result-list">
             {results.slice(0, visibleCount).map(({ b, c, v, text }, i) => {
-              const ref = `${BOOK_MAP[b]?.ko} ${c}:${v}`;
-              const nivText = getNivText(b, c, v);
+              const ref = resultVersion === 'NIV'
+                ? `${BOOK_MAP[b]?.en} ${c}:${v}`
+                : `${BOOK_MAP[b]?.ko} ${c}:${v}`;
+              const nivText = getOtherText(b, c, v);
               const isOpen = openNiv === i;
               return (
                 <div key={i} className="result-item-wrap">
@@ -192,7 +208,7 @@ export default function SearchPanel({ bibles, onGoTo }) {
                         <button
                           className={`niv-btn${isOpen ? ' active' : ''}`}
                           onClick={e => { e.stopPropagation(); setOpenNiv(isOpen ? null : i); setCopiedNiv(false); }}
-                        >NIV</button>
+                        >{otherVersion === 'NIV' ? 'NIV' : '한글'}</button>
                       )}
                       <button
                         className={`copy-btn-inline${copied === i ? ' copied' : ''}`}
@@ -202,12 +218,12 @@ export default function SearchPanel({ bibles, onGoTo }) {
                   </div>
                   {isOpen && nivText && (
                     <div className="niv-popup">
-                      <span className="niv-popup-ref">{BOOK_MAP[b]?.en ?? ''} {c}:{v}</span>
-                      <span className="niv-popup-text">{nivText}</span>
+                      <span className="niv-popup-ref">{otherRef(b, c, v)}</span>
+                      <span className={`niv-popup-text${otherVersion === 'NIV' ? '' : ' ko'}`}>{nivText}</span>
                       <button
                         className={`copy-btn-inline${copiedNiv ? ' copied' : ''}`}
-                        onClick={e => { e.stopPropagation(); copyNiv(nivText, `${BOOK_MAP[b]?.en ?? ''} ${c}:${v}`); }}
-                      >{copiedNiv ? '✓' : 'Copy'}</button>
+                        onClick={e => { e.stopPropagation(); copyNiv(nivText, otherRef(b, c, v)); }}
+                      >{copiedNiv ? '✓' : '복사'}</button>
                       <button className="niv-close-btn" onClick={e => { e.stopPropagation(); setOpenNiv(null); }}>×</button>
                     </div>
                   )}

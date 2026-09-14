@@ -53,12 +53,14 @@ body {
 }
 .app-title { font-size: 17px; font-weight: 700; letter-spacing: .5px; white-space: nowrap; }
 
-.quick-nav { position: relative; flex: 1; max-width: 160px; }
+.quick-nav { position: relative; flex: 1; max-width: 180px; display: flex; }
 .quick-nav input {
   width: 100%;
+  min-width: 0;
   padding: 4px 10px;
-  border-radius: var(--radius);
+  border-radius: var(--radius) 0 0 var(--radius);
   border: 1px solid rgba(255,255,255,.3);
+  border-right: none;
   background: rgba(255,255,255,.15);
   color: #fff;
   font-size: 13px;
@@ -66,6 +68,14 @@ body {
 .quick-nav input::placeholder { color: rgba(255,255,255,.6); }
 .quick-nav input:focus { outline: none; border-color: rgba(255,255,255,.7); }
 .quick-nav.error input { border-color: #ff8080; }
+.quick-go {
+  padding: 0 10px;
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: rgba(255,255,255,.25);
+  color: #fff; font-size: 14px; cursor: pointer; flex-shrink: 0;
+}
+.quick-go:hover { background: rgba(255,255,255,.35); }
 .quick-error {
   position: absolute;
   top: 100%;
@@ -130,6 +140,11 @@ body {
   border-radius: 50%; animation: spin .8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+.loading-hint { font-size: 13px; }
+.retry-btn {
+  padding: 8px 20px; background: var(--accent); color: #fff; border: none;
+  border-radius: var(--radius); font-size: 14px; cursor: pointer;
+}
 
 /* ── BibleReader ───────────────────────────────────────────── */
 .bible-reader { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
@@ -190,8 +205,9 @@ body {
 
 .verse-actions {
   display: flex; gap: 2px; opacity: 0; transition: opacity .15s; flex-shrink: 0;
+  pointer-events: none; /* 숨겨진 상태에서 터치로 눌리는 것 방지 */
 }
-.verse:hover .verse-actions, .verse-block.selected .verse-actions { opacity: 1; }
+.verse:hover .verse-actions, .verse-block.selected .verse-actions { opacity: 1; pointer-events: auto; }
 
 .action-btn {
   background: none; border: none; cursor: pointer; font-size: 14px;
@@ -313,6 +329,7 @@ body {
 }
 .niv-popup-ref { min-width: 80px; font-size: 12px; font-weight: 700; color: #6aaa6a; flex-shrink: 0; padding-top: 3px; }
 .niv-popup-text { flex: 1; font-size: 14px; font-style: italic; color: var(--text); line-height: 1.6; }
+.niv-popup-text.ko { font-style: normal; }
 .niv-close-btn { flex-shrink: 0; background: none; border: none; cursor: pointer; color: var(--muted); font-size: 20px; padding: 0 4px; line-height: 1; min-height: 32px; }
 .niv-close-btn:hover { color: var(--text); }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
@@ -563,6 +580,14 @@ mark { background: var(--mark); border-radius: 2px; }
   .search-options-row select { width: 100%; font-size: 16px; }
   .search-range-row select { font-size: 16px; }
   .result-count { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+  /* iOS Safari는 16px 미만 입력창에 포커스하면 화면을 확대하므로 16px로 고정 */
+  .quick-nav input, .notes-search-input, .note-editor textarea { font-size: 16px; }
+  .quick-nav { max-width: 200px; }
+}
+/* 터치 기기: 호버가 없으므로 절 동작 버튼을 항상 표시하고 툴팁은 탭으로 */
+@media (hover: none) {
+  .verse-actions { opacity: .55; pointer-events: auto; }
+  .info-tip:active::after, .info-tip:focus::after { opacity: 1; }
 }
 
 /* -- Verse highlight on navigation --------------------------------- */

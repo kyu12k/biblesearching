@@ -1,29 +1,24 @@
 import { useState, useEffect } from 'react';
 
 const DISMISSED_KEY = 'pwa-dismissed';
+const IS_IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
 
 export default function PWAInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [visible, setVisible] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(() => window.__pwaPrompt ?? null);
+  const [visible, setVisible] = useState(() => {
+    if (window.matchMedia('(display-mode: standalone)').matches) return false;
+    try { if (localStorage.getItem(DISMISSED_KEY)) return false; } catch { /* ignore */ }
+    return true;
+  });
+  const isIOS = IS_IOS;
 
   useEffect(() => {
-    if (window.matchMedia('(display-mode: standalone)').matches) return;
-    if (localStorage.getItem(DISMISSED_KEY)) return;
-
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-    setIsIOS(ios);
-
-    if (window.__pwaPrompt) setDeferredPrompt(window.__pwaPrompt);
-
     const handler = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
       window.__pwaPrompt = e;
     };
     window.addEventListener('beforeinstallprompt', handler);
-
-    setVisible(true);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 

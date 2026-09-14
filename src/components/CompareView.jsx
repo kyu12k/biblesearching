@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BOOKS, BOOK_MAP } from '../data/books';
 
 function buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseNum, showVersion, showParen, eachLine, layout }) {
@@ -90,28 +90,45 @@ export default function CompareView({ bibles, gotoRef, bookmarks, onBookmark, no
   const [copied,      setCopied]      = useState(null);
   const [editingNote, setEditingNote] = useState(null);
   const [noteText,    setNoteText]    = useState('');
+  const listRef      = useRef(null);
+  const verseEls     = useRef({});
+  const scrolledGoto = useRef(null); // 절 스크롤을 이미 처리한 gotoRef
 
   const bookInfo   = BOOK_MAP[bookId];
   const maxChapter = bookInfo?.chapters ?? 1;
 
-  useEffect(() => { setChapter(1); setSelected(new Set()); }, [bookId]);
-  useEffect(() => { setSelected(new Set()); }, [chapter]);
+  // BibleReader와 동일하게, 책/장 이동은 goTo를 통해서만 하고 선택 초기화도 여기서 처리
+  function goTo(b, c) {
+    setBookId(b);
+    setChapter(c);
+    setSelected(new Set());
+  }
+
+  // 외부 이동 요청(gotoRef)은 렌더 중에 상태를 맞추는 방식으로 처리 (React 권장 패턴)
+  const [lastGoto, setLastGoto] = useState(null);
+  if (gotoRef && gotoRef !== lastGoto) {
+    setLastGoto(gotoRef);
+    goTo(gotoRef.b, gotoRef.c);
+  }
+
+  // 장이 바뀌면 맨 위로, 이동 요청에 절이 있으면 그 절로 스크롤
   useEffect(() => {
-    if (!gotoRef) return;
-    setBookId(gotoRef.b);
-    setChapter(gotoRef.c);
-  }, [gotoRef]);
+    const isNewGoto = lastGoto && lastGoto !== scrolledGoto.current;
+    scrolledGoto.current = lastGoto;
+    const el = isNewGoto && lastGoto.v ? verseEls.current[String(lastGoto.v)] : null;
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    else listRef.current?.scrollTo({ top: 0 });
+  }, [bookId, chapter, lastGoto]);
 
   const versions = Object.keys(bibles).filter(v => bibles[v]);
+  // 절 번호 기준으로 정렬 (NIV는 일부 절이 본문에서 생략되어 번호가 비므로
+  // 순서(index)가 아니라 절 번호로 맞춰야 한다)
   const allVerses = (() => {
-    const sets = versions.map(v => {
-      const data = bibles[v]?.[String(bookId)]?.[String(chapter)];
-      return data ? Object.entries(data).sort((a, b) => +a[0] - +b[0]) : [];
-    });
-    const maxLen = Math.max(...sets.map(s => s.length), 0);
-    return Array.from({ length: maxLen }, (_, i) => ({
-      verse: sets[0]?.[i]?.[0] ?? String(i + 1),
-      texts: versions.map((_, vi) => sets[vi]?.[i]?.[1] ?? ''),
+    const chapters = versions.map(v => bibles[v]?.[String(bookId)]?.[String(chapter)] ?? {});
+    const nums = [...new Set(chapters.flatMap(ch => Object.keys(ch)))].sort((a, b) => +a - +b);
+    return nums.map(verse => ({
+      verse,
+      texts: chapters.map(ch => ch[verse] ?? ''),
     }));
   })();
 
@@ -150,6 +167,16 @@ export default function CompareView({ bibles, gotoRef, bookmarks, onBookmark, no
     setEditingNote(null);
   }
 
+  // BibleReader와 동일하게 책 경계를 넘어 이동
+  function prevChapter() {
+    if (chapter > 1) goTo(bookId, chapter - 1);
+    else if (bookId > 1) goTo(bookId - 1, BOOK_MAP[bookId - 1].chapters);
+  }
+  function nextChapter() {
+    if (chapter < maxChapter) goTo(bookId, chapter + 1);
+    else if (bookId < 66) goTo(bookId + 1, 1);
+  }
+
   function copyChapter() {
     const allV = allVerses.map(r => r.verse);
     setCopyCtx({ verses: allV, isChapter: true });
@@ -162,16 +189,16 @@ export default function CompareView({ bibles, gotoRef, bookmarks, onBookmark, no
   return (
     <div className="compare-view">
       <div className="compare-nav">
-        <select value={bookId} onChange={e => setBookId(+e.target.value)}>
+        <select value={bookId} onChange={e => goTo(+e.target.value, 1)}>
           {BOOKS.map(b => <option key={b.id} value={b.id}>{b.ko}</option>)}
         </select>
-        <select value={chapter} onChange={e => setChapter(+e.target.value)}>
+        <select value={chapter} onChange={e => goTo(bookId, +e.target.value)}>
           {Array.from({ length: maxChapter }, (_, i) => i + 1).map(c => (
             <option key={c} value={c}>{c}장</option>
           ))}
         </select>
-        <button className="nav-btn" onClick={() => setChapter(c => Math.max(1, c - 1))} disabled={chapter <= 1}>◀</button>
-        <button className="nav-btn" onClick={() => setChapter(c => Math.min(maxChapter, c + 1))} disabled={chapter >= maxChapter}>▶</button>
+        <button className="nav-btn" onClick={prevChapter} disabled={bookId === 1 && chapter === 1} title="이전 장">◀</button>
+        <button className="nav-btn" onClick={nextChapter} disabled={bookId === 66 && chapter === maxChapter} title="다음 장">▶</button>
         <div className="reader-nav-right">
           <button className="icon-btn" onClick={copyChapter} title="장 전체 복사">📋</button>
           {selected.size > 0 && (
@@ -186,7 +213,7 @@ export default function CompareView({ bibles, gotoRef, bookmarks, onBookmark, no
         {bookInfo?.ko} {chapter}장 — 버전 비교
       </div>
 
-      <div className="compare-verses">
+      <div className="compare-verses" ref={listRef}>
         {allVerses.map(({ verse, texts }) => {
           const bmd     = isBookmarked(verse);
           const note    = getNote(verse);
@@ -194,6 +221,7 @@ export default function CompareView({ bibles, gotoRef, bookmarks, onBookmark, no
           return (
             <div
               key={verse}
+              ref={el => { verseEls.current[verse] = el; }}
               className={`compare-verse-block${selected.has(verse) ? ' compare-selected' : ''}`}
               style={bmStyle}
               onClick={() => toggleVerse(verse)}

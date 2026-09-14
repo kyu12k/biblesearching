@@ -11,7 +11,7 @@ export function useLocalStorage(key, initialValue) {
   });
 
   useEffect(() => {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* 저장 공간 부족/사생활 모드 등 — 무시 */ }
   }, [key, value]);
 
   return [value, setValue];

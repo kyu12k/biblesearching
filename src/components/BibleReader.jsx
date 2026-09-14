@@ -7,10 +7,11 @@ export default function BibleReader({ bible, version, onCopy, onToast, gotoRef, 
   const [selected, setSelected]       = useState(new Set());
   const [editingNote, setEditingNote] = useState(null);
   const [noteText, setNoteText]       = useState('');
-  const [hlVerse, setHlVerse]         = useState(null);
+  // { v, n }: n은 같은 절로 다시 이동해도 효과가 재실행되도록 하는 카운터
+  const [hl, setHl]                   = useState({ v: null, n: 0 });
   const verseListRef   = useRef(null);
   const verseEls       = useRef({});
-  const gotoChapterRef = useRef(null);
+  const hlTimer        = useRef(null);
 
   const bookInfo    = BOOK_MAP[bookId];
   const maxChapter  = bookInfo?.chapters ?? 1;
@@ -20,34 +21,36 @@ export default function BibleReader({ bible, version, onCopy, onToast, gotoRef, 
     ? Object.entries(chapterData).sort((a, b) => +a[0] - +b[0])
     : [];
 
-  useEffect(() => {
-    if (gotoChapterRef.current !== null) {
-      setChapter(gotoChapterRef.current);
-      gotoChapterRef.current = null;
-    } else {
-      setChapter(1);
-    }
+  // 책/장 이동은 항상 goTo 를 통해서만 하고 선택 초기화도 여기서 처리한다
+  // (bookId 변경 effect로 장을 1로 되돌리던 방식은 외부 이동(gotoRef)과 충돌해
+  //  엉뚱한 장이 열리거나 빈 화면이 나오는 문제가 있었음)
+  function goTo(b, c) {
+    setBookId(b);
+    setChapter(c);
     setSelected(new Set());
-  }, [bookId]);
+  }
+  const selectBook    = (b) => goTo(b, 1);
+  const selectChapter = (c) => goTo(bookId, c);
 
-  useEffect(() => { setSelected(new Set()); }, [chapter]);
+  // 외부 이동 요청(gotoRef)은 렌더 중에 상태를 맞추는 방식으로 처리 (React 권장 패턴)
+  const [lastGoto, setLastGoto] = useState(null);
+  if (gotoRef && gotoRef !== lastGoto) {
+    setLastGoto(gotoRef);
+    goTo(gotoRef.b, gotoRef.c);
+    setHl(gotoRef.v ? { v: String(gotoRef.v), n: hl.n + 1 } : { v: null, n: 0 });
+  }
+
+  // 장이 바뀌면 맨 위로
+  useEffect(() => { verseListRef.current?.scrollTo({ top: 0 }); }, [bookId, chapter]);
 
   useEffect(() => {
-    if (!gotoRef) return;
-    gotoChapterRef.current = gotoRef.c;
-    setBookId(gotoRef.b);
-    setChapter(gotoRef.c);
-    if (gotoRef.v) {
-      setHlVerse(String(gotoRef.v));
-      setTimeout(() => setHlVerse(null), (hlDuration ?? 2) * 1000);
-    }
-  }, [gotoRef]);
-
-  useEffect(() => {
-    if (!hlVerse) return;
-    const el = verseEls.current[hlVerse];
+    if (!hl.v) return;
+    const el = verseEls.current[hl.v];
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [hlVerse]);
+    clearTimeout(hlTimer.current);
+    hlTimer.current = setTimeout(() => setHl({ v: null, n: 0 }), (hlDuration ?? 2) * 1000);
+    return () => clearTimeout(hlTimer.current);
+  }, [hl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleVerse(v) {
     setSelected(prev => {
@@ -58,12 +61,12 @@ export default function BibleReader({ bible, version, onCopy, onToast, gotoRef, 
   }
 
   function prevChapter() {
-    if (chapter > 1) { setChapter(c => c - 1); }
-    else if (bookId > 1) { const nb = bookId - 1; setBookId(nb); setChapter(BOOK_MAP[nb].chapters); }
+    if (chapter > 1) selectChapter(chapter - 1);
+    else if (bookId > 1) goTo(bookId - 1, BOOK_MAP[bookId - 1].chapters);
   }
   function nextChapter() {
-    if (chapter < maxChapter) { setChapter(c => c + 1); }
-    else if (bookId < 66) { setBookId(b => b + 1); setChapter(1); }
+    if (chapter < maxChapter) selectChapter(chapter + 1);
+    else if (bookId < 66) goTo(bookId + 1, 1);
   }
 
   function isBookmarked(v) {
@@ -103,15 +106,16 @@ export default function BibleReader({ bible, version, onCopy, onToast, gotoRef, 
     const NL = String.fromCharCode(10);
     const lines = verses.map(([v, t]) => v + ' ' + t).join(NL);
     navigator.clipboard.writeText(bookInfo?.ko + ' ' + chapter + '장' + NL + lines);
+    onToast();
   }
 
   return (
     <div className="bible-reader">
       <div className="reader-nav">
-        <select value={bookId} onChange={e => setBookId(+e.target.value)}>
+        <select value={bookId} onChange={e => selectBook(+e.target.value)}>
           {BOOKS.map(b => <option key={b.id} value={b.id}>{b.ko}</option>)}
         </select>
-        <select value={chapter} onChange={e => setChapter(+e.target.value)}>
+        <select value={chapter} onChange={e => selectChapter(+e.target.value)}>
           {Array.from({ length: maxChapter }, (_, i) => i + 1).map(c => (
             <option key={c} value={c}>{c}장</option>
           ))}
@@ -141,13 +145,13 @@ export default function BibleReader({ bible, version, onCopy, onToast, gotoRef, 
         {verses.map(([v, text]) => {
           const bmd  = isBookmarked(v);
           const note = getNote(v);
-          const isHl = hlVerse === v;
+          const isHl = hl.v === v;
           const bmStyle = bmd ? { backgroundColor: bmColor ?? '#a8d8f0' } : {};
           const hlStyle = isHl ? { '--hl-color': hlColor ?? '#ffe08a', '--hl-dur': (hlDuration ?? 2) + 's' } : {};
           return (
             <div
-              key={v}
-              ref={el => verseEls.current[v] = el}
+              key={isHl ? `${v}-hl${hl.n}` : v} /* 같은 절 재이동 시 애니메이션 재시작 */
+              ref={el => { verseEls.current[v] = el; }}
               className={`verse-block${selected.has(v) ? ' selected' : ''}${isHl ? ' highlighted' : ''}`}
               style={{ ...bmStyle, ...hlStyle }}
             >
@@ -203,7 +207,7 @@ export default function BibleReader({ bible, version, onCopy, onToast, gotoRef, 
             </div>
           );
         })}
-        {verses.length === 0 && <div className="empty">본문을 불러오는 중...</div>}
+        {verses.length === 0 && <div className="empty">본문이 없습니다.</div>}
       </div>
     </div>
   );

@@ -14,25 +14,27 @@ function findBook(term) {
 }
 
 // "요3:16", "요1", "창 1:1", "요한복음 3:16" 파싱
-// 반환: { b, c, v } — v는 없으면 null (장 이동)
+// 반환: { b, c, v } — v는 없으면 null (장 이동). 책을 못 찾거나 장 범위를 벗어나면 null
 export function parseRef(input) {
   const s = input.trim();
   if (!s) return null;
 
-  // 장:절 형식
+  // 장:절 형식 (전각 콜론 '：' 도 허용)
   const full = s.match(/^(.+?)\s*(\d+)\s*[:：]\s*(\d+)$/);
   if (full) {
     const book = findBook(full[1]);
-    if (!book) return null;
-    return { b: book.id, c: +full[2], v: +full[3] };
+    const c = +full[2], v = +full[3];
+    if (!book || c < 1 || c > book.chapters || v < 1) return null;
+    return { b: book.id, c, v };
   }
 
   // 장만 (절 없음)
   const chapOnly = s.match(/^(.+?)\s*(\d+)$/);
   if (chapOnly) {
     const book = findBook(chapOnly[1]);
-    if (!book) return null;
-    return { b: book.id, c: +chapOnly[2], v: null };
+    const c = +chapOnly[2];
+    if (!book || c < 1 || c > book.chapters) return null;
+    return { b: book.id, c, v: null };
   }
 
   return null;

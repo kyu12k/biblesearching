@@ -27,7 +27,9 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // 성경 데이터(json)도 프리캐시해야 오프라인에서 열린다 (기본 2MB 제한을 넘으므로 상향)
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },
     }),
   ],

@@ -7,7 +7,6 @@ import SidePanel          from './components/SidePanel';
 import PWAInstallPrompt   from './components/PWAInstallPrompt';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { parseRef } from './utils/parseRef';
-import { BOOK_MAP } from './data/books';
 import './App.css';
 
 const TABS = [
@@ -22,7 +21,8 @@ export default function App() {
   const [version, setVersion] = useState('HRV');
   const [loading, setLoading] = useState(true);
   const [copyCtx, setCopyCtx] = useState(null);
-  const [toast, setToast] = useState(false);
+  const [toast, setToast]     = useState(0);   // 0이면 숨김, 증가할 때마다 애니메이션 재시작
+  const [loadError, setLoadError] = useState(null);
   const [gotoRef,        setGotoRef]        = useState(null);
   const [compareGotoRef, setCompareGotoRef] = useState(null);
   const [activePanel,    setActivePanel]    = useState(null);
@@ -51,19 +51,23 @@ export default function App() {
 
   useEffect(() => {
     async function load() {
-      const [hrv, niv] = await Promise.all([
-        fetch('/data/HRV.json').then(r => r.json()),
-        fetch('/data/NIV.json').then(r => r.json()),
-      ]);
-      setBibles({ HRV: hrv, NIV: niv });
-      setLoading(false);
+      try {
+        const [hrv, niv] = await Promise.all([
+          fetch('/data/HRV.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+          fetch('/data/NIV.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+        ]);
+        setBibles({ HRV: hrv, NIV: niv });
+        setLoading(false);
+      } catch (err) {
+        setLoadError(err);
+      }
     }
     load();
   }, []);
 
   function navigate(b, c, v = null) {
     if (tab === 'compare') {
-      setCompareGotoRef({ b, c });
+      setCompareGotoRef({ b, c, v });
       return;
     }
     setGotoRef({ b, c, v });
@@ -76,8 +80,13 @@ export default function App() {
     setHistory(prev => [entry, ...prev.filter(h => !(h.b === b && h.c === c && h.v === v))].slice(0, 30));
   }
 
+  function showToast() {
+    setToast(t => t + 1);
+    setTimeout(() => setToast(0), 2000);
+  }
+
   function handleQuickNav(e) {
-    if (e.key !== 'Enter') { setQuickError(false); return; }
+    e.preventDefault();
     const ref = parseRef(quickInput);
     if (!ref) { setQuickError(true); return; }
     setQuickError(false);
@@ -95,8 +104,18 @@ export default function App() {
   if (loading) {
     return (
       <div className="loading-screen">
-        <div className="loading-spinner" />
-        <p>성경 데이터 로딩 중...</p>
+        {loadError ? (
+          <>
+            <p>성경 데이터를 불러오지 못했습니다.</p>
+            <p className="loading-hint">네트워크 연결을 확인한 뒤 다시 시도해 주세요.</p>
+            <button className="retry-btn" onClick={() => window.location.reload()}>다시 시도</button>
+          </>
+        ) : (
+          <>
+            <div className="loading-spinner" />
+            <p>성경 데이터 로딩 중...</p>
+          </>
+        )}
       </div>
     );
   }
@@ -107,17 +126,21 @@ export default function App() {
         <span className="app-title">✝ 장절 검색</span>
 
         {/* Quick navigation */}
-        <div className={`quick-nav ${quickError ? 'error' : ''}`}>
+        <form className={`quick-nav ${quickError ? 'error' : ''}`} onSubmit={handleQuickNav}>
           <input
             type="text"
             placeholder="요3:16"
             value={quickInput}
             onChange={e => { setQuickInput(e.target.value); setQuickError(false); }}
-            onKeyDown={handleQuickNav}
+            enterKeyHint="go"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
             title="책이름 장:절 형식으로 입력 후 Enter (예: 요3:16, 창1:1)"
           />
+          <button type="submit" className="quick-go" title="이동" aria-label="이동">→</button>
           {quickError && <span className="quick-error">찾을 수 없음</span>}
-        </div>
+        </form>
 
         <div className="header-actions">
           {tab === 'read' && (
@@ -154,7 +177,7 @@ export default function App() {
             onCopy={(bookId, chapter, verses, chapterData) =>
               setCopyCtx({ bookId, chapter, verses, chapterData })
             }
-            onToast={() => { setToast(true); setTimeout(() => setToast(false), 2000); }}
+            onToast={showToast}
             bookmarks={bookmarks}
             onBookmark={setBookmarks}
             notes={notes}
@@ -176,17 +199,17 @@ export default function App() {
             notes={notes}
             onNote={setNotes}
             bmColor={bmColor}
-            onToast={() => { setToast(true); setTimeout(() => setToast(false), 2000); }}
+            onToast={showToast}
           />
         </div>
       </main>
 
       {copyCtx && (
         <CopyModal {...copyCtx} version={version} onClose={() => setCopyCtx(null)}
-          onCopied={() => { setCopyCtx(null); setToast(true); setTimeout(() => setToast(false), 2000); }} />
+          onCopied={() => { setCopyCtx(null); showToast(); }} />
       )}
 
-      {toast && <div className="toast">복사되었습니다</div>}
+      {toast > 0 && <div key={toast} className="toast">복사되었습니다</div>}
 
       <PWAInstallPrompt />
 
