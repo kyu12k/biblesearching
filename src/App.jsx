@@ -123,8 +123,6 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <span className="app-title">✝ 장절 검색</span>
-
         {/* Quick navigation */}
         <form className={`quick-nav ${quickError ? 'error' : ''}`} onSubmit={handleQuickNav}>
           <input

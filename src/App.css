@@ -51,9 +51,7 @@ body {
   flex-shrink: 0;
   flex-wrap: wrap;
 }
-.app-title { font-size: 17px; font-weight: 700; letter-spacing: .5px; white-space: nowrap; }
-
-.quick-nav { position: relative; flex: 1; max-width: 180px; display: flex; }
+.quick-nav { position: relative; flex: 1; max-width: 260px; display: flex; }
 .quick-nav input {
   width: 100%;
   min-width: 0;
@@ -576,13 +574,12 @@ mark { background: var(--mark); border-radius: 2px; }
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .app { max-width: 100%; }
-  .app-title { font-size: 15px; }
   .search-options-row select { width: 100%; font-size: 16px; }
   .search-range-row select { font-size: 16px; }
   .result-count { position: sticky; top: 0; background: var(--surface); z-index: 1; }
   /* iOS Safari는 16px 미만 입력창에 포커스하면 화면을 확대하므로 16px로 고정 */
   .quick-nav input, .notes-search-input, .note-editor textarea { font-size: 16px; }
-  .quick-nav { max-width: 200px; }
+  .quick-nav { max-width: none; }
 }
 /* 터치 기기: 호버가 없으므로 절 동작 버튼을 항상 표시하고 툴팁은 탭으로 */
 @media (hover: none) {
