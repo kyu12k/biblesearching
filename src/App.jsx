@@ -3,6 +3,7 @@ import BibleReader from './components/BibleReader';
 import SearchPanel from './components/SearchPanel';
 import CompareView from './components/CompareView';
 import CopyModal          from './components/CopyModal';
+import ProjectView        from './components/ProjectView';
 import SidePanel          from './components/SidePanel';
 import PWAInstallPrompt   from './components/PWAInstallPrompt';
 import { useLocalStorage } from './hooks/useLocalStorage';
@@ -21,6 +22,7 @@ export default function App() {
   const [version, setVersion] = useState('HRV');
   const [loading, setLoading] = useState(true);
   const [copyCtx, setCopyCtx] = useState(null);
+  const [projectCtx, setProjectCtx] = useState(null);
   const [toast, setToast]     = useState(0);   // 0이면 숨김, 증가할 때마다 애니메이션 재시작
   const [loadError, setLoadError] = useState(null);
   const [gotoRef,        setGotoRef]        = useState(null);
@@ -40,6 +42,7 @@ export default function App() {
   const [hlDuration, setHlDuration] = useLocalStorage('bs-hldur',   2);
   const [hlColor,    setHlColor]    = useLocalStorage('bs-hlcolor', '#ffe08a');
   const [bmColor,    setBmColor]    = useLocalStorage('bs-bmcolor', '#a8d8f0');
+  const [projLight,  setProjLight]  = useLocalStorage('bs-projlight', false);
 
   // Apply theme & font size to root
   useEffect(() => {
@@ -175,6 +178,7 @@ export default function App() {
             onCopy={(bookId, chapter, verses, chapterData) =>
               setCopyCtx({ bookId, chapter, verses, chapterData })
             }
+            onProject={(bookId, chapter, verses) => setProjectCtx({ bookId, chapter, verses })}
             onToast={showToast}
             bookmarks={bookmarks}
             onBookmark={setBookmarks}
@@ -198,6 +202,7 @@ export default function App() {
             onNote={setNotes}
             bmColor={bmColor}
             onToast={showToast}
+            onProject={(bookId, chapter, verses) => setProjectCtx({ bookId, chapter, verses, bilingual: true })}
           />
         </div>
       </main>
@@ -205,6 +210,21 @@ export default function App() {
       {copyCtx && (
         <CopyModal {...copyCtx} version={version} onClose={() => setCopyCtx(null)}
           onCopied={() => { setCopyCtx(null); showToast(); }} />
+      )}
+
+      {projectCtx && (
+        <ProjectView
+          bible={bibles[version]}
+          bibles={bibles}
+          version={version}
+          bookId={projectCtx.bookId}
+          chapter={projectCtx.chapter}
+          verses={projectCtx.verses}
+          defaultBilingual={projectCtx.bilingual ?? false}
+          bgLight={projLight}
+          onBgLight={setProjLight}
+          onClose={() => setProjectCtx(null)}
+        />
       )}
 
       {toast > 0 && <div key={toast} className="toast">복사되었습니다</div>}

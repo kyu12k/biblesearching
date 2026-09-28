@@ -82,7 +82,7 @@ function CompareCopyModal({ bookId, chapter, verses, allVerses, versions, onClos
   );
 }
 
-export default function CompareView({ bibles, gotoRef, bookmarks, onBookmark, notes, onNote, bmColor, onToast }) {
+export default function CompareView({ bibles, gotoRef, bookmarks, onBookmark, notes, onNote, bmColor, onToast, onProject }) {
   const [bookId,      setBookId]      = useState(1);
   const [chapter,     setChapter]     = useState(1);
   const [selected,    setSelected]    = useState(new Set());
@@ -202,9 +202,14 @@ export default function CompareView({ bibles, gotoRef, bookmarks, onBookmark, no
         <div className="reader-nav-right">
           <button className="icon-btn" onClick={copyChapter} title="장 전체 복사">📋</button>
           {selected.size > 0 && (
-            <button className="copy-btn" onClick={() =>
-              openCopyModal([...selected].sort((a, b) => +a - +b))
-            }>{selected.size}절 복사</button>
+            <>
+              <button className="project-btn" onClick={() =>
+                onProject(bookId, chapter, [...selected].sort((a, b) => +a - +b))
+              } title="선택한 절을 화면 가득 보기">크게 보기</button>
+              <button className="copy-btn" onClick={() =>
+                openCopyModal([...selected].sort((a, b) => +a - +b))
+              }>{selected.size}절 복사</button>
+            </>
           )}
         </div>
       </div>
