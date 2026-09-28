@@ -43,6 +43,9 @@ export default function App() {
   const [hlColor,    setHlColor]    = useLocalStorage('bs-hlcolor', '#ffe08a');
   const [bmColor,    setBmColor]    = useLocalStorage('bs-bmcolor', '#a8d8f0');
   const [projLight,  setProjLight]  = useLocalStorage('bs-projlight', false);
+  const [projFont,   setProjFont]   = useLocalStorage('bs-projfont',  'myeongjo');
+  const [projZoom,   setProjZoom]   = useLocalStorage('bs-projzoom',  0.9);
+  const [projFull,   setProjFull]   = useLocalStorage('bs-projfull',  true);
 
   // Apply theme & font size to root
   useEffect(() => {
@@ -223,6 +226,12 @@ export default function App() {
           defaultBilingual={projectCtx.bilingual ?? false}
           bgLight={projLight}
           onBgLight={setProjLight}
+          font={projFont}
+          onFont={setProjFont}
+          zoom={projZoom}
+          onZoom={setProjZoom}
+          autoFull={projFull}
+          onAutoFull={setProjFull}
           onClose={() => setProjectCtx(null)}
         />
       )}

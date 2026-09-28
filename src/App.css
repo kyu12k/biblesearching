@@ -640,17 +640,17 @@ mark { background: var(--mark); border-radius: 2px; }
 .project-stage {
   flex: 1; min-height: 0; display: flex;
   align-items: center; justify-content: center;
-  padding: 6vh 7vw 2vh;
+  padding: 7vh 9vw 3vh;
   position: relative; z-index: 1;
 }
 .project-fit {
   width: 100%; height: 100%; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
-.project-text { width: 100%; text-align: center; }
+.project-text { width: 100%; text-align: left; }
 .project-verse {
-  line-height: 1.45; letter-spacing: -.01em;
-  word-break: keep-all; text-wrap: balance;
+  line-height: 1.5; letter-spacing: -.01em;
+  word-break: keep-all; text-wrap: pretty;
   text-shadow: 0 2px 24px rgba(0,0,0,.35);
 }
 .project-view.light .project-verse { text-shadow: none; }
@@ -660,15 +660,15 @@ mark { background: var(--mark); border-radius: 2px; }
 
 .project-ref {
   position: relative; z-index: 1;
-  flex-shrink: 0; text-align: center;
-  padding: 0 6vw 5vh;
-  font-size: clamp(14px, 2.4vh, 26px);
-  letter-spacing: .12em; color: #d8b98a;
+  flex-shrink: 0; text-align: left;
+  padding: 0 9vw 5vh;
+  font-size: clamp(17px, 3.4vh, 40px);
+  letter-spacing: .1em; color: #d8b98a;
 }
 .project-view.light .project-ref { color: #8b5e3c; }
 .project-ref::before {
   content: ''; display: block; width: 72px; height: 1px;
-  margin: 0 auto 2.4vh; background: currentColor; opacity: .45;
+  margin: 0 0 2.2vh; background: currentColor; opacity: .45;
 }
 .project-ref-other { opacity: .7; letter-spacing: .06em; }
 
@@ -694,7 +694,8 @@ mark { background: var(--mark); border-radius: 2px; }
   background: rgba(255,255,255,.08); color: inherit;
   font-family: 'Malgun Gothic', sans-serif;
 }
-.project-controls button:hover { background: rgba(255,255,255,.18); }
+.project-controls button:hover:not(:disabled) { background: rgba(255,255,255,.18); }
+.project-controls button:disabled { opacity: .35; cursor: default; }
 .project-controls button.on { background: rgba(216,185,138,.35); border-color: rgba(216,185,138,.6); }
 .project-view.light .project-controls button {
   border-color: rgba(0,0,0,.14); background: rgba(0,0,0,.05);
@@ -702,19 +703,36 @@ mark { background: var(--mark); border-radius: 2px; }
 .project-view.light .project-controls button:hover { background: rgba(0,0,0,.12); }
 .project-close { font-size: 16px !important; }
 
-.project-hint {
-  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
-  z-index: 2; font-size: 12px; opacity: .35; letter-spacing: .04em;
-  font-family: 'Malgun Gothic', sans-serif; white-space: nowrap;
-  transition: opacity .3s;
+.project-font-wrap { position: relative; }
+.project-font-btn { min-width: 56px; }
+.project-font-menu {
+  position: absolute; top: calc(100% + 6px); right: 0;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 6px; border-radius: 10px;
+  background: rgba(24,18,12,.96); border: 1px solid rgba(255,255,255,.16);
+  box-shadow: 0 8px 28px rgba(0,0,0,.45);
 }
+.project-view.light .project-font-menu {
+  background: rgba(255,253,247,.98); border-color: rgba(0,0,0,.14);
+}
+.project-font-menu button {
+  display: flex; align-items: baseline; gap: 10px;
+  width: 100%; height: auto; min-height: 36px; padding: 6px 12px;
+  border: none; background: none; color: inherit;
+  font-size: 15px; text-align: left; white-space: nowrap; border-radius: 6px;
+}
+.project-font-menu button:hover { background: rgba(255,255,255,.12); }
+.project-view.light .project-font-menu button:hover { background: rgba(0,0,0,.08); }
+.project-font-menu button.sel { background: rgba(216,185,138,.3); }
+.project-font-name { min-width: 58px; font-size: 13px; opacity: .75; font-family: 'Malgun Gothic', sans-serif; }
+.project-font-sample { font-size: 17px; }
+
 .project-view.hide-ui .project-controls,
-.project-view.hide-ui .project-hint,
 .project-view.hide-ui .project-nav { opacity: 0; pointer-events: none; }
 
 @media (max-width: 600px) {
   /* 좌우 이동 버튼과 본문이 겹치지 않도록 여백 확보 */
   .project-stage { padding: 7vh 12vw 2vh; }
-  .project-hint { display: none; }
+  .project-ref { padding: 0 12vw 4vh; }
   .project-nav { height: 60vh; min-width: 44px; }
 }
