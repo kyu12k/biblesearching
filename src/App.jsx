@@ -42,7 +42,7 @@ export default function App() {
   const [hlDuration, setHlDuration] = useLocalStorage('bs-hldur',   2);
   const [hlColor,    setHlColor]    = useLocalStorage('bs-hlcolor', '#ffe08a');
   const [bmColor,    setBmColor]    = useLocalStorage('bs-bmcolor', '#a8d8f0');
-  const [projLight,  setProjLight]  = useLocalStorage('bs-projlight', false);
+  const [projBg,     setProjBg]     = useLocalStorage('bs-projbg',    'dark');
   const [projFont,   setProjFont]   = useLocalStorage('bs-projfont',  'myeongjo');
   const [projZoom,   setProjZoom]   = useLocalStorage('bs-projzoom',  0.9);
   const [projFull,   setProjFull]   = useLocalStorage('bs-projfull',  true);
@@ -224,8 +224,8 @@ export default function App() {
           chapter={projectCtx.chapter}
           verses={projectCtx.verses}
           defaultBilingual={projectCtx.bilingual ?? false}
-          bgLight={projLight}
-          onBgLight={setProjLight}
+          bg={projBg}
+          onBg={setProjBg}
           font={projFont}
           onFont={setProjFont}
           zoom={projZoom}

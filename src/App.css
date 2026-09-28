@@ -635,6 +635,31 @@ mark { background: var(--mark); border-radius: 2px; }
   color: #2b2016;
 }
 .project-view.light::before { opacity: .09; }
+
+/* 하늘 사진 배경 — 16:9 이미지지만 cover 로 깔아 세로 화면에서는 좌우를 잘라낸다
+   (위아래 띠는 어느 비율에서나 남도록) */
+.project-view.photo {
+  background: #e8f3fb url('/bg-sky.jpg') no-repeat center / cover;
+  color: #13232f;
+}
+.project-view.photo::before { display: none; }   /* 십자가 워터마크 대신 사진 */
+/* 글자가 놓이는 곳을 옅게 밝혀 지구·구름 위에서도 읽히게 */
+.project-view.photo::after {
+  content: '';
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(to bottom,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,.08) 35%,
+    rgba(255,255,255,.26) 72%,
+    rgba(255,255,255,.5) 100%);
+}
+.project-view.photo .project-verse {
+  text-shadow: 0 1px 0 rgba(255,255,255,.7), 0 0 22px rgba(255,255,255,.9);
+}
+.project-view.photo .project-ref {
+  color: #0f4363;
+  text-shadow: 0 1px 0 rgba(255,255,255,.7), 0 0 16px rgba(255,255,255,.9);
+}
 .project-view.hide-ui { cursor: none; }
 
 .project-stage {
@@ -697,10 +722,12 @@ mark { background: var(--mark); border-radius: 2px; }
 .project-controls button:hover:not(:disabled) { background: rgba(255,255,255,.18); }
 .project-controls button:disabled { opacity: .35; cursor: default; }
 .project-controls button.on { background: rgba(216,185,138,.35); border-color: rgba(216,185,138,.6); }
-.project-view.light .project-controls button {
-  border-color: rgba(0,0,0,.14); background: rgba(0,0,0,.05);
+.project-view.light .project-controls button,
+.project-view.photo .project-controls button {
+  border-color: rgba(0,0,0,.16); background: rgba(255,255,255,.55); color: #1d2b36;
 }
-.project-view.light .project-controls button:hover { background: rgba(0,0,0,.12); }
+.project-view.light .project-controls button:hover:not(:disabled),
+.project-view.photo .project-controls button:hover:not(:disabled) { background: rgba(255,255,255,.85); }
 .project-close { font-size: 16px !important; }
 
 .project-font-wrap { position: relative; }
@@ -712,8 +739,9 @@ mark { background: var(--mark); border-radius: 2px; }
   background: rgba(24,18,12,.96); border: 1px solid rgba(255,255,255,.16);
   box-shadow: 0 8px 28px rgba(0,0,0,.45);
 }
-.project-view.light .project-font-menu {
-  background: rgba(255,253,247,.98); border-color: rgba(0,0,0,.14);
+.project-view.light .project-font-menu,
+.project-view.photo .project-font-menu {
+  background: rgba(255,255,255,.98); border-color: rgba(0,0,0,.14); color: #1d2b36;
 }
 .project-font-menu button {
   display: flex; align-items: baseline; gap: 10px;
@@ -722,7 +750,8 @@ mark { background: var(--mark); border-radius: 2px; }
   font-size: 15px; text-align: left; white-space: nowrap; border-radius: 6px;
 }
 .project-font-menu button:hover { background: rgba(255,255,255,.12); }
-.project-view.light .project-font-menu button:hover { background: rgba(0,0,0,.08); }
+.project-view.light .project-font-menu button:hover,
+.project-view.photo .project-font-menu button:hover { background: rgba(0,0,0,.08); }
 .project-font-menu button.sel { background: rgba(216,185,138,.3); }
 .project-font-name { min-width: 58px; font-size: 13px; opacity: .75; font-family: 'Malgun Gothic', sans-serif; }
 .project-font-sample { font-size: 17px; }
