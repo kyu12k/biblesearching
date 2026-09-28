@@ -727,8 +727,9 @@ mark { background: var(--mark); border-radius: 2px; }
 .project-font-name { min-width: 58px; font-size: 13px; opacity: .75; font-family: 'Malgun Gothic', sans-serif; }
 .project-font-sample { font-size: 17px; }
 
-.project-view.hide-ui .project-controls,
-.project-view.hide-ui .project-nav { opacity: 0; pointer-events: none; }
+.project-view.hide-ui .project-controls { opacity: 0; pointer-events: none; }
+/* 좌우 이동 영역은 보이지 않아도 누를 수 있다 — 눌러도 컨트롤은 나타나지 않음 */
+.project-view.hide-ui .project-nav { opacity: 0; }
 
 @media (max-width: 600px) {
   /* 좌우 이동 버튼과 본문이 겹치지 않도록 여백 확보 */

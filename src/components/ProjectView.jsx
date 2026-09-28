@@ -131,8 +131,9 @@ export default function ProjectView({
   useEffect(() => {
     function onKey(e) {
       const k = e.key;
-      if (k === 'ArrowRight' || k === 'ArrowDown' || k === ' ' || k === 'PageDown') { e.preventDefault(); go(1); wakeUI(); }
-      else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp') { e.preventDefault(); go(-1); wakeUI(); }
+      // 절 이동만으로는 컨트롤을 띄우지 않는다 (화면에 본문만 남도록)
+      if (k === 'ArrowRight' || k === 'ArrowDown' || k === ' ' || k === 'PageDown') { e.preventDefault(); go(1); }
+      else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp') { e.preventDefault(); go(-1); }
       else if (k === 'Escape') onClose();
       else if (k === '+' || k === '=') { onZoom(clampZoom(zoom + ZOOM_STEP)); wakeUI(); }
       else if (k === '-') { onZoom(clampZoom(zoom - ZOOM_STEP)); wakeUI(); }
@@ -187,8 +188,9 @@ export default function ProjectView({
     touchX.current = null;
     if (start === null) return;
     const dx = e.changedTouches[0].clientX - start;
+    // 스와이프는 절 이동만 (컨트롤은 그대로 숨겨둔다).
+    // 가볍게 누른 경우는 아래 onClick 에서 처리 — 좌우 이동 영역은 자기 핸들러가 막는다
     if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
-    wakeUI();
   }
 
   const label = refLabel(cur, version);
@@ -199,7 +201,7 @@ export default function ProjectView({
       ref={rootRef}
       className={`project-view${bgLight ? ' light' : ''}${showUI ? '' : ' hide-ui'}`}
       style={{ fontFamily: curFont.stack }}
-      onMouseMove={wakeUI}
+      onPointerMove={e => { if (e.pointerType === 'mouse') wakeUI(); }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       onClick={() => { setFontOpen(false); wakeUI(); }}
@@ -221,7 +223,7 @@ export default function ProjectView({
       <button className="project-nav prev" onClick={e => { e.stopPropagation(); go(-1); }} aria-label="이전 절">‹</button>
       <button className="project-nav next" onClick={e => { e.stopPropagation(); go(1); }} aria-label="다음 절">›</button>
 
-      <div className="project-controls" onClick={e => e.stopPropagation()}>
+      <div className="project-controls" onClick={e => { e.stopPropagation(); wakeUI(); }}>
         <button onClick={() => onZoom(clampZoom(zoom - ZOOM_STEP))} disabled={zoom <= ZOOM_MIN} title="글자 작게 (-)">A-</button>
         <button onClick={() => onZoom(clampZoom(zoom + ZOOM_STEP))} disabled={zoom >= ZOOM_MAX} title="글자 크게 (+)">A+</button>
         <div className="project-font-wrap">
