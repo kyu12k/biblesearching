@@ -609,42 +609,16 @@ mark { background: var(--mark); border-radius: 2px; }
 .project-view {
   position: fixed; inset: 0; z-index: 400;
   display: flex; flex-direction: column;
-  background:
-    radial-gradient(120% 80% at 50% 0%, #3b2a18 0%, rgba(59,42,24,0) 60%),
-    radial-gradient(100% 100% at 50% 100%, #241a10 0%, #14100b 70%);
-  color: #f4ead9;
+  /* 하늘 사진 배경 — 16:9 이미지를 cover 로 깔아 세로 화면에서는 좌우를 잘라낸다
+     (위아래 띠는 어느 화면 비율에서나 그대로 남는다) */
+  background: #e8f3fb url('/bg-sky.jpg') no-repeat center / cover;
+  color: #13232f;
   font-family: 'Nanum Myeongjo', 'Batang', '바탕', 'Malgun Gothic', serif;
   user-select: none;
   overflow: hidden;
 }
-/* 은은한 십자가 워터마크 */
-.project-view::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140'><path d='M42 0h16v40h32v16H58v84H42V56H10V40h32z' fill='%23c9a87a'/></svg>") no-repeat center / auto min(62vh, 78vw);
-  opacity: .055;
-  /* 가장자리를 부드럽게 흐려 사각형처럼 보이지 않게 */
-  mask-image: radial-gradient(circle min(48vh, 60vw) at 50% 50%, #000 42%, transparent 100%);
-  -webkit-mask-image: radial-gradient(circle min(48vh, 60vw) at 50% 50%, #000 42%, transparent 100%);
-  pointer-events: none;
-}
-.project-view.light {
-  background:
-    radial-gradient(120% 80% at 50% 0%, #fffdf7 0%, rgba(255,253,247,0) 60%),
-    radial-gradient(100% 100% at 50% 100%, #f3ead8 0%, #e9dcc4 75%);
-  color: #2b2016;
-}
-.project-view.light::before { opacity: .09; }
-
-/* 하늘 사진 배경 — 16:9 이미지지만 cover 로 깔아 세로 화면에서는 좌우를 잘라낸다
-   (위아래 띠는 어느 비율에서나 남도록) */
-.project-view.photo {
-  background: #e8f3fb url('/bg-sky.jpg') no-repeat center / cover;
-  color: #13232f;
-}
-.project-view.photo::before { display: none; }   /* 십자가 워터마크 대신 사진 */
-/* 글자가 놓이는 곳을 옅게 밝혀 지구·구름 위에서도 읽히게 */
-.project-view.photo::after {
+/* 아래쪽 지구·구름 위에서도 글자가 읽히도록 옅게 밝힌다 */
+.project-view::after {
   content: '';
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background: linear-gradient(to bottom,
@@ -653,19 +627,12 @@ mark { background: var(--mark); border-radius: 2px; }
     rgba(255,255,255,.26) 72%,
     rgba(255,255,255,.5) 100%);
 }
-.project-view.photo .project-verse {
-  text-shadow: 0 1px 0 rgba(255,255,255,.7), 0 0 22px rgba(255,255,255,.9);
-}
-.project-view.photo .project-ref {
-  color: #0f4363;
-  text-shadow: 0 1px 0 rgba(255,255,255,.7), 0 0 16px rgba(255,255,255,.9);
-}
 .project-view.hide-ui { cursor: none; }
 
 .project-stage {
   flex: 1; min-height: 0; display: flex;
   align-items: center; justify-content: center;
-  padding: 7vh 9vw 3vh;
+  padding: 8vh 9vw 2vh;
   position: relative; z-index: 1;
 }
 .project-fit {
@@ -676,26 +643,24 @@ mark { background: var(--mark); border-radius: 2px; }
 .project-verse {
   line-height: 1.5; letter-spacing: -.01em;
   word-break: keep-all; text-wrap: pretty;
-  text-shadow: 0 2px 24px rgba(0,0,0,.35);
+  text-shadow: 0 1px 0 rgba(255,255,255,.7), 0 0 22px rgba(255,255,255,.9);
 }
-.project-view.light .project-verse { text-shadow: none; }
 .project-verse.other {
-  margin-top: .7em; font-size: .62em; font-style: italic; opacity: .78;
+  margin-top: .7em; font-size: .62em; font-style: italic; opacity: .8;
 }
 
+/* 구절 주소 — 배경 그림의 아래쪽 띠에 걸리지 않도록 띄우고, 그림에 어울리는 고딕으로 */
 .project-ref {
   position: relative; z-index: 1;
   flex-shrink: 0; text-align: left;
-  padding: 0 9vw 5vh;
-  font-size: clamp(17px, 3.4vh, 40px);
-  letter-spacing: .1em; color: #d8b98a;
+  padding: 0 9vw 9vh;
+  font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+  font-size: clamp(15px, 3.2vh, 36px);
+  font-weight: 600; letter-spacing: 0;
+  color: #17558a;
+  text-shadow: 0 1px 0 rgba(255,255,255,.75), 0 0 14px rgba(255,255,255,.95);
 }
-.project-view.light .project-ref { color: #8b5e3c; }
-.project-ref::before {
-  content: ''; display: block; width: 72px; height: 1px;
-  margin: 0 0 2.2vh; background: currentColor; opacity: .45;
-}
-.project-ref-other { opacity: .7; letter-spacing: .06em; }
+.project-ref-other { opacity: .72; font-weight: 400; }
 
 .project-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
@@ -715,19 +680,13 @@ mark { background: var(--mark); border-radius: 2px; }
 .project-controls button {
   min-width: 42px; height: 38px; padding: 0 10px;
   border-radius: 8px; cursor: pointer; font-size: 14px;
-  border: 1px solid rgba(255,255,255,.18);
-  background: rgba(255,255,255,.08); color: inherit;
+  border: 1px solid rgba(0,0,0,.16);
+  background: rgba(255,255,255,.55); color: #1d2b36;
   font-family: 'Malgun Gothic', sans-serif;
 }
-.project-controls button:hover:not(:disabled) { background: rgba(255,255,255,.18); }
+.project-controls button:hover:not(:disabled) { background: rgba(255,255,255,.85); }
 .project-controls button:disabled { opacity: .35; cursor: default; }
-.project-controls button.on { background: rgba(216,185,138,.35); border-color: rgba(216,185,138,.6); }
-.project-view.light .project-controls button,
-.project-view.photo .project-controls button {
-  border-color: rgba(0,0,0,.16); background: rgba(255,255,255,.55); color: #1d2b36;
-}
-.project-view.light .project-controls button:hover:not(:disabled),
-.project-view.photo .project-controls button:hover:not(:disabled) { background: rgba(255,255,255,.85); }
+.project-controls button.on { background: rgba(23,85,138,.2); border-color: rgba(23,85,138,.45); }
 .project-close { font-size: 16px !important; }
 
 .project-font-wrap { position: relative; }
@@ -736,12 +695,8 @@ mark { background: var(--mark); border-radius: 2px; }
   position: absolute; top: calc(100% + 6px); right: 0;
   display: flex; flex-direction: column; gap: 2px;
   padding: 6px; border-radius: 10px;
-  background: rgba(24,18,12,.96); border: 1px solid rgba(255,255,255,.16);
-  box-shadow: 0 8px 28px rgba(0,0,0,.45);
-}
-.project-view.light .project-font-menu,
-.project-view.photo .project-font-menu {
-  background: rgba(255,255,255,.98); border-color: rgba(0,0,0,.14); color: #1d2b36;
+  background: rgba(255,255,255,.98); border: 1px solid rgba(0,0,0,.14); color: #1d2b36;
+  box-shadow: 0 8px 28px rgba(0,0,0,.25);
 }
 .project-font-menu button {
   display: flex; align-items: baseline; gap: 10px;
@@ -749,10 +704,8 @@ mark { background: var(--mark); border-radius: 2px; }
   border: none; background: none; color: inherit;
   font-size: 15px; text-align: left; white-space: nowrap; border-radius: 6px;
 }
-.project-font-menu button:hover { background: rgba(255,255,255,.12); }
-.project-view.light .project-font-menu button:hover,
-.project-view.photo .project-font-menu button:hover { background: rgba(0,0,0,.08); }
-.project-font-menu button.sel { background: rgba(216,185,138,.3); }
+.project-font-menu button:hover { background: rgba(0,0,0,.08); }
+.project-font-menu button.sel { background: rgba(23,85,138,.16); }
 .project-font-name { min-width: 58px; font-size: 13px; opacity: .75; font-family: 'Malgun Gothic', sans-serif; }
 .project-font-sample { font-size: 17px; }
 
@@ -763,6 +716,6 @@ mark { background: var(--mark); border-radius: 2px; }
 @media (max-width: 600px) {
   /* 좌우 이동 버튼과 본문이 겹치지 않도록 여백 확보 */
   .project-stage { padding: 7vh 12vw 2vh; }
-  .project-ref { padding: 0 12vw 4vh; }
+  .project-ref { padding: 0 12vw 8vh; }
   .project-nav { height: 60vh; min-width: 44px; }
 }

@@ -57,13 +57,6 @@ function refLabel({ b, c, v }, version) {
   return `${name} ${c}:${v}`;
 }
 
-// 배경: 어두운 색 / 밝은 색 / 하늘 사진
-const BGS = [
-  { id: 'dark',  icon: '🌙', label: '어두운 배경' },
-  { id: 'light', icon: '☀',  label: '밝은 배경' },
-  { id: 'photo', icon: '🖼', label: '하늘 사진' },
-];
-
 // 글자 크기 배율: 1 = 화면에 꽉 차게, 그 아래로만 줄일 수 있다
 const ZOOM_MIN = 0.5, ZOOM_MAX = 1, ZOOM_STEP = 0.05;
 const clampZoom = z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z * 100) / 100));
@@ -77,7 +70,7 @@ function alreadyFullscreen() {
 
 export default function ProjectView({
   bible, bibles, version, bookId, chapter, verses, onClose,
-  bg, onBg, font, onFont, zoom: rawZoom, onZoom, autoFull, onAutoFull,
+  font, onFont, zoom: rawZoom, onZoom, autoFull, onAutoFull,
   defaultBilingual = false,
 }) {
   // 선택한 절들을 순서대로 보여주고, 양 끝에서는 앞뒤 절로 계속 이어간다
@@ -95,8 +88,6 @@ export default function ProjectView({
   const touchX   = useRef(null);
 
   const zoom = clampZoom(rawZoom ?? 0.9);
-  const bgIdx  = Math.max(0, BGS.findIndex(x => x.id === bg));
-  const cycleBg = () => onBg(BGS[(bgIdx + 1) % BGS.length].id);
   const cur = list[idx];
   const text = bible?.[String(cur.b)]?.[String(cur.c)]?.[String(cur.v)] ?? '';
   const otherVersion = version === 'NIV' ? 'HRV' : 'NIV';
@@ -146,12 +137,11 @@ export default function ProjectView({
       else if (k === 'Escape') onClose();
       else if (k === '+' || k === '=') { onZoom(clampZoom(zoom + ZOOM_STEP)); wakeUI(); }
       else if (k === '-') { onZoom(clampZoom(zoom - ZOOM_STEP)); wakeUI(); }
-      else if (k.toLowerCase?.() === 'b') { cycleBg(); wakeUI(); }
       else if (k.toLowerCase?.() === 'f') { toggleFull(); }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [go, onClose, wakeUI, bgIdx, onBg, zoom, onZoom, toggleFull]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [go, onClose, wakeUI, zoom, onZoom, toggleFull]);
 
   // 전체화면 + 화면 꺼짐 방지.
   // 이미 F11 등으로 화면을 채우고 있으면 전체화면 API를 쓰지 않는다 —
@@ -189,7 +179,7 @@ export default function ProjectView({
       else hi = mid;
     }
     el.style.fontSize = `${lo * zoom}px`;
-  }, [text, otherText, bilingual, zoom, bg, curFont]);
+  }, [text, otherText, bilingual, zoom, curFont]);
 
   function onTouchStart(e) { touchX.current = e.touches[0].clientX; }
   function onTouchEnd(e) {
@@ -208,7 +198,7 @@ export default function ProjectView({
   return (
     <div
       ref={rootRef}
-      className={`project-view ${BGS[bgIdx].id}${showUI ? '' : ' hide-ui'}`}
+      className={`project-view${showUI ? '' : ' hide-ui'}`}
       style={{ fontFamily: curFont.stack }}
       onPointerMove={e => { if (e.pointerType === 'mouse') wakeUI(); }}
       onTouchStart={onTouchStart}
@@ -258,7 +248,6 @@ export default function ProjectView({
             </div>
           )}
         </div>
-        <button onClick={cycleBg} title={`배경: ${BGS[bgIdx].label} (B)`}>{BGS[bgIdx].icon}</button>
         <button className={bilingual ? 'on' : ''} onClick={() => setBilingual(v => !v)} title="한·영 함께 보기">한/EN</button>
         <button className={isFull ? 'on' : ''} onClick={toggleFull} title={isFull ? '전체화면 끄기 (F)' : '전체화면 (F)'}>⛶</button>
         <button className="project-close" onClick={onClose} title="닫기 (Esc)">✕</button>
