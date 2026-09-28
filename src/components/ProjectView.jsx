@@ -3,6 +3,7 @@ import { BOOK_MAP } from '../data/books';
 
 // 화면에 띄울 때 고를 수 있는 글꼴. probe 글꼴이 설치된 경우에만 목록에 보여준다
 const PROJECT_FONTS = [
+  { id: 'kopub',    label: 'KoPub 돋움', probe: null,      stack: "'KoPubWorld Dotum','Malgun Gothic',sans-serif" },
   { id: 'myeongjo', label: '명조',     probe: 'Batang',      stack: "'Nanum Myeongjo','NanumMyeongjo','Batang','바탕',serif" },
   { id: 'gothic',   label: '고딕',     probe: null,          stack: "'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo','Noto Sans KR',sans-serif" },
   { id: 'nanum',    label: '나눔고딕', probe: 'NanumGothic', stack: "'NanumGothic','Nanum Gothic','Malgun Gothic',sans-serif" },
@@ -80,6 +81,7 @@ export default function ProjectView({
   const [fontOpen, setFontOpen] = useState(false);
   const [bilingual, setBilingual] = useState(defaultBilingual);
   const [isFull, setIsFull] = useState(() => !!document.fullscreenElement);
+  const [fontTick, setFontTick] = useState(0);   // 웹폰트가 준비되면 크기를 다시 계산
 
   const rootRef  = useRef(null);
   const boxRef   = useRef(null);
@@ -96,6 +98,16 @@ export default function ProjectView({
   // 설치되어 있는 글꼴만 고를 수 있게 (probe 가 없는 항목은 항상 표시)
   const fonts = useMemo(() => PROJECT_FONTS.filter(f => !f.probe || hasFont(f.probe)), []);
   const curFont = fonts.find(f => f.id === font) ?? fonts[0];
+
+  // 고른 글꼴이 웹폰트면 다 받은 뒤에 글자 크기를 다시 맞춘다
+  useEffect(() => {
+    const first = curFont.stack.split(',')[0];
+    let alive = true;
+    document.fonts?.load(`40px ${first}`)
+      .then(() => { if (alive) setFontTick(t => t + 1); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [curFont]);
 
   const go = useCallback((dir) => {
     // 목록 안에서는 그대로 이동, 양 끝에서는 앞뒤 절을 이어붙인다
@@ -179,7 +191,7 @@ export default function ProjectView({
       else hi = mid;
     }
     el.style.fontSize = `${lo * zoom}px`;
-  }, [text, otherText, bilingual, zoom, curFont]);
+  }, [text, otherText, bilingual, zoom, curFont, fontTick]);
 
   function onTouchStart(e) { touchX.current = e.touches[0].clientX; }
   function onTouchEnd(e) {

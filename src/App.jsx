@@ -42,7 +42,7 @@ export default function App() {
   const [hlDuration, setHlDuration] = useLocalStorage('bs-hldur',   2);
   const [hlColor,    setHlColor]    = useLocalStorage('bs-hlcolor', '#ffe08a');
   const [bmColor,    setBmColor]    = useLocalStorage('bs-bmcolor', '#a8d8f0');
-  const [projFont,   setProjFont]   = useLocalStorage('bs-projfont',  'myeongjo');
+  const [projFont,   setProjFont]   = useLocalStorage('bs-projfont2', 'kopub');
   const [projZoom,   setProjZoom]   = useLocalStorage('bs-projzoom',  0.9);
   const [projFull,   setProjFull]   = useLocalStorage('bs-projfull',  true);
 

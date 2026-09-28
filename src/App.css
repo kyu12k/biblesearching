@@ -599,6 +599,16 @@ mark { background: var(--mark); border-radius: 2px; }
 }
 
 /* ── 크게 보기 (프로젝션) ──────────────────────────────── */
+/* 본문에 쓰이는 글자만 추려낸 웹폰트 (scripts/subset_font.py 로 생성).
+   원본이 Bold 이므로 normal 로 선언해 브라우저가 덧칠하지 않게 한다 */
+@font-face {
+  font-family: 'KoPubWorld Dotum';
+  src: url('/fonts/kopub-dotum-bold.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 .project-btn {
   padding: 5px 12px; background: var(--primary); color: #fff;
   border: none; border-radius: var(--radius); font-size: 13px; cursor: pointer;
@@ -654,9 +664,10 @@ mark { background: var(--mark); border-radius: 2px; }
   position: relative; z-index: 1;
   flex-shrink: 0; text-align: left;
   padding: 0 9vw 9vh;
-  font-family: 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
-  font-size: clamp(15px, 3.2vh, 36px);
-  font-weight: 600; letter-spacing: 0;
+  /* 글꼴 파일 자체가 Bold 이므로 weight 는 normal 로 둔다 (겹쳐 굵어지지 않게) */
+  font-family: 'KoPubWorld Dotum', 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
+  font-size: clamp(15px, 3.1vh, 34px);
+  font-weight: normal; letter-spacing: 0;
   color: #17558a;
   text-shadow: 0 1px 0 rgba(255,255,255,.75), 0 0 14px rgba(255,255,255,.95);
 }
