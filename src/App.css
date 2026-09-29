@@ -666,7 +666,7 @@ mark { background: var(--mark); border-radius: 2px; }
   padding: 0 9vw 9vh;
   /* 글꼴 파일 자체가 Bold 이므로 weight 는 normal 로 둔다 (겹쳐 굵어지지 않게) */
   font-family: 'KoPubWorld Dotum', 'Malgun Gothic', '맑은 고딕', 'Apple SD Gothic Neo', sans-serif;
-  font-size: clamp(15px, 3.1vh, 34px);
+  font-size: clamp(19px, 4.4vh, 50px);
   font-weight: normal; letter-spacing: 0;
   color: #17558a;
   text-shadow: 0 1px 0 rgba(255,255,255,.75), 0 0 14px rgba(255,255,255,.95);
@@ -727,6 +727,7 @@ mark { background: var(--mark); border-radius: 2px; }
 @media (max-width: 600px) {
   /* 좌우 이동 버튼과 본문이 겹치지 않도록 여백 확보 */
   .project-stage { padding: 7vh 12vw 2vh; }
-  .project-ref { padding: 0 12vw 8vh; }
+  /* 화면이 작으면 본문도 작아지므로 주소가 본문만큼 커지지 않게 줄인다 */
+  .project-ref { padding: 0 12vw 8vh; font-size: clamp(16px, 3vh, 27px); }
   .project-nav { height: 60vh; min-width: 44px; }
 }
