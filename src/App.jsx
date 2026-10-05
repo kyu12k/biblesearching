@@ -139,7 +139,7 @@ export default function App() {
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="off"
-            title="책이름 장:절 형식으로 입력 후 Enter (예: 요3:16, 창1:1)"
+            title="책이름 장:절 형식으로 입력 후 Enter (예: 요3:16, 창1:1). 책 이름만 입력하면 1장으로 이동합니다 (예: 암)"
           />
           <button type="submit" className="quick-go" title="이동" aria-label="이동">→</button>
           {quickError && <span className="quick-error">찾을 수 없음</span>}

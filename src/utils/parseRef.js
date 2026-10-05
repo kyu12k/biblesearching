@@ -2,6 +2,8 @@ import { BOOKS } from '../data/books';
 
 function findBook(term) {
   const t = term.trim().toLowerCase();
+  // 숫자만 있는 조각은 책 이름으로 보지 않는다 ("12" 가 '1 Samuel' 로 잡히던 문제)
+  if (!t || /^\d+$/.test(t)) return undefined;
   // 우선순위: 약어 완전일치 > 한글 완전일치 > 약어 시작 > 한글 시작 > 영어 시작
   return (
     BOOKS.find(b => b.abbr === t) ||
@@ -13,7 +15,7 @@ function findBook(term) {
   );
 }
 
-// "요3:16", "요1", "창 1:1", "요한복음 3:16" 파싱
+// "요3:16", "요1", "창 1:1", "요한복음 3:16", "암"(책 이름만 → 1장) 파싱
 // 반환: { b, c, v } — v는 없으면 null (장 이동). 책을 못 찾거나 장 범위를 벗어나면 null
 export function parseRef(input) {
   const s = input.trim();
@@ -33,8 +35,13 @@ export function parseRef(input) {
   if (chapOnly) {
     const book = findBook(chapOnly[1]);
     const c = +chapOnly[2];
-    if (!book || c < 1 || c > book.chapters) return null;
-    return { b: book.id, c, v: null };
+    if (book && c >= 1 && c <= book.chapters) return { b: book.id, c, v: null };
+  }
+
+  // 책 이름만 ("암", "아모스") → 그 책 1장. 숫자만 입력한 경우는 제외
+  if (!/^\d+$/.test(s)) {
+    const book = findBook(s);
+    if (book) return { b: book.id, c: 1, v: null };
   }
 
   return null;
