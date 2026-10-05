@@ -721,6 +721,16 @@ mark { background: var(--mark); border-radius: 2px; }
 .project-font-sample { font-size: 17px; }
 
 .project-view.hide-ui .project-controls { opacity: 0; pointer-events: none; }
+
+.project-notice {
+  position: absolute; top: 72px; left: 50%; transform: translateX(-50%);
+  z-index: 5; max-width: calc(100% - 32px);
+  padding: 10px 18px; border-radius: 10px;
+  background: rgba(19,35,47,.88); color: #fff;
+  font: 15px/1.4 'Malgun Gothic', sans-serif; text-align: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  animation: fadeIn .15s ease;
+}
 /* 좌우 이동 영역은 보이지 않아도 누를 수 있다 — 눌러도 컨트롤은 나타나지 않음 */
 .project-view.hide-ui .project-nav { opacity: 0; }
 

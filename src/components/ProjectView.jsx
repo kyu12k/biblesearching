@@ -62,6 +62,33 @@ function refLabel({ b, c, v }, version) {
 const ZOOM_MIN = 0.5, ZOOM_MAX = 1, ZOOM_STEP = 0.05;
 const clampZoom = z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z * 100) / 100));
 
+// ── 여러 모니터 (Window Management API — 데스크톱 크롬·엣지) ──
+// 연결된 모니터 목록을 받아 원하는 모니터에 바로 전체화면을 띄운다.
+const MULTI_SCREEN = typeof window !== 'undefined' && 'getScreenDetails' in window;
+let screenDetails = null;   // 한 번 받으면 모니터 연결·창 이동에 따라 계속 갱신되는 객체라 재사용
+async function getScreens() {
+  if (!screenDetails) screenDetails = await window.getScreenDetails();
+  return screenDetails;
+}
+const sameScreen = (a, b) => !!a && !!b && (a === b ||
+  (a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height));
+// 저장용: 모니터 객체는 저장할 수 없으므로 이름과 위치만 남긴다
+const screenKey = s => ({ label: s.label ?? '', left: s.left, top: s.top, width: s.width, height: s.height });
+function findScreen(screens, key) {
+  if (!key) return null;
+  return screens.find(s => sameScreen(s, key) && (s.label ?? '') === key.label)
+      ?? screens.find(s => key.label && s.label === key.label)   // 해상도·배치가 바뀐 경우
+      ?? null;
+}
+async function screenPermissionGranted() {
+  // 크롬 111 이전에는 권한 이름이 window-placement 였다
+  for (const name of ['window-management', 'window-placement']) {
+    try { return (await navigator.permissions.query({ name })).state === 'granted'; }
+    catch { /* 지원하지 않는 이름이면 다음 이름으로 */ }
+  }
+  return false;
+}
+
 // 창이 이미 화면을 꽉 채우고 있는지 (F11 전체화면, 설치한 앱으로 실행 등)
 function alreadyFullscreen() {
   if (document.fullscreenElement) return true;
@@ -72,6 +99,7 @@ function alreadyFullscreen() {
 export default function ProjectView({
   bible, bibles, version, bookId, chapter, verses, onClose,
   font, onFont, zoom: rawZoom, onZoom, autoFull, onAutoFull,
+  screenPref, onScreenPref,
   defaultBilingual = false,
 }) {
   // 선택한 절들을 순서대로 보여주고, 양 끝에서는 앞뒤 절로 계속 이어간다
@@ -82,12 +110,16 @@ export default function ProjectView({
   const [bilingual, setBilingual] = useState(defaultBilingual);
   const [isFull, setIsFull] = useState(() => !!document.fullscreenElement);
   const [fontTick, setFontTick] = useState(0);   // 웹폰트가 준비되면 크기를 다시 계산
+  // 보조 모니터가 연결되어 있는지 (권한 없이 알 수 있음) — 있을 때만 모니터 버튼을 보여준다
+  const [extended, setExtended] = useState(() => MULTI_SCREEN && !!window.screen.isExtended);
+  const [notice, setNotice] = useState('');
 
   const rootRef  = useRef(null);
   const boxRef   = useRef(null);
   const textRef  = useRef(null);
   const uiTimer  = useRef(null);
   const touchX   = useRef(null);
+  const noticeTimer = useRef(null);
 
   const zoom = clampZoom(rawZoom ?? 0.9);
   const cur = list[idx];
@@ -139,7 +171,47 @@ export default function ProjectView({
     }
   }, [onAutoFull]);
 
-  // 키보드: ←/→ 이동, Esc 닫기, +/- 글자 크기, b 배경, f 전체화면
+  const flash = useCallback((msg) => {
+    setNotice(msg);
+    clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => setNotice(''), 3500);
+  }, []);
+  useEffect(() => () => clearTimeout(noticeTimer.current), []);
+
+  useEffect(() => {
+    if (!MULTI_SCREEN) return;
+    const onChange = () => setExtended(!!window.screen.isExtended);
+    window.screen.addEventListener?.('change', onChange);
+    return () => window.screen.removeEventListener?.('change', onChange);
+  }, []);
+
+  // 지금 창이 있는 모니터의 다음 모니터로 전체화면을 옮긴다 (2대면 서로 왔다 갔다)
+  const moveScreen = useCallback(async () => {
+    if (!MULTI_SCREEN) { flash('모니터 전환은 PC용 크롬·엣지에서만 지원됩니다'); return; }
+    try {
+      const d = await getScreens();   // 처음에는 브라우저가 모니터 권한을 묻는다
+      const screens = d.screens;
+      if (screens.length < 2) { flash('연결된 다른 모니터가 없습니다'); return; }
+      // 권한 창에 응답하느라 시간이 지나면 전체화면 요청이 거부되므로 한 번 더 누르게 한다
+      if (navigator.userActivation && !navigator.userActivation.isActive) {
+        flash('모니터 권한이 허용되었습니다. 한 번 더 누르면 옮겨집니다');
+        return;
+      }
+      const i = screens.findIndex(x => sameScreen(x, d.currentScreen));
+      const target = screens[(i + 1) % screens.length];
+      await rootRef.current.requestFullscreen({ screen: target });
+      onScreenPref(screenKey(target));   // 다음에 열 때도 이 모니터에서
+      onAutoFull(true);
+    } catch (err) {
+      if (err?.name === 'NotAllowedError' && !(await screenPermissionGranted())) {
+        flash('모니터 권한이 필요합니다 — 주소창 왼쪽 아이콘에서 "창 관리"를 허용해 주세요');
+      } else {
+        flash('다른 모니터로 옮기지 못했습니다');
+      }
+    }
+  }, [flash, onScreenPref, onAutoFull]);
+
+  // 키보드: ←/→ 이동, Esc 닫기, +/- 글자 크기, F 전체화면, M 모니터 전환
   useEffect(() => {
     function onKey(e) {
       const k = e.key;
@@ -149,22 +221,37 @@ export default function ProjectView({
       else if (k === 'Escape') onClose();
       else if (k === '+' || k === '=') { onZoom(clampZoom(zoom + ZOOM_STEP)); wakeUI(); }
       else if (k === '-') { onZoom(clampZoom(zoom - ZOOM_STEP)); wakeUI(); }
-      else if (k.toLowerCase?.() === 'f') { toggleFull(); }
+      // 한글 입력 상태에서도 동작하도록 글자가 아니라 키 위치로 판단
+      else if (e.ctrlKey || e.metaKey || e.altKey) return;
+      else if (e.code === 'KeyF') { toggleFull(); }
+      else if (e.code === 'KeyM') { e.preventDefault(); moveScreen(); }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [go, onClose, wakeUI, zoom, onZoom, toggleFull]);
+  }, [go, onClose, wakeUI, zoom, onZoom, toggleFull, moveScreen]);
 
   // 전체화면 + 화면 꺼짐 방지.
   // 이미 F11 등으로 화면을 채우고 있으면 전체화면 API를 쓰지 않는다 —
   // 브라우저가 "전체 화면을 종료하려면 Esc 키를 누르세요" 안내를 띄우기 때문.
+  // 지난번에 다른 모니터로 옮겼다면 이번에도 그 모니터에서 바로 연다.
   useEffect(() => {
-    if (autoFull && !alreadyFullscreen()) {
-      rootRef.current?.requestFullscreen?.().catch(() => {});
-    }
+    let cancelled = false;
+    (async () => {
+      if (!autoFull) return;
+      let target = null;
+      if (MULTI_SCREEN && screenPref && window.screen.isExtended && await screenPermissionGranted()) {
+        const d = await getScreens().catch(() => null);
+        const s = d && findScreen(d.screens, screenPref);
+        if (s && !sameScreen(s, d.currentScreen)) target = s;
+      }
+      if (cancelled) return;
+      if (target) rootRef.current?.requestFullscreen?.({ screen: target }).catch(() => {});
+      else if (!alreadyFullscreen()) rootRef.current?.requestFullscreen?.().catch(() => {});
+    })();
     let lock = null;
     navigator.wakeLock?.request('screen').then(l => { lock = l; }).catch(() => {});
     return () => {
+      cancelled = true;
       lock?.release?.().catch(() => {});
       if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
     };
@@ -261,9 +348,14 @@ export default function ProjectView({
           )}
         </div>
         <button className={bilingual ? 'on' : ''} onClick={() => setBilingual(v => !v)} title="한·영 함께 보기">한/EN</button>
+        {extended && (
+          <button onClick={moveScreen} title="다른 모니터로 옮기기 (M)">⇄ 모니터</button>
+        )}
         <button className={isFull ? 'on' : ''} onClick={toggleFull} title={isFull ? '전체화면 끄기 (F)' : '전체화면 (F)'}>⛶</button>
         <button className="project-close" onClick={onClose} title="닫기 (Esc)">✕</button>
       </div>
+
+      {notice && <div className="project-notice" role="status">{notice}</div>}
     </div>
   );
 }

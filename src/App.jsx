@@ -45,6 +45,7 @@ export default function App() {
   const [projFont,   setProjFont]   = useLocalStorage('bs-projfont2', 'kopub');
   const [projZoom,   setProjZoom]   = useLocalStorage('bs-projzoom',  0.9);
   const [projFull,   setProjFull]   = useLocalStorage('bs-projfull',  true);
+  const [projScreen, setProjScreen] = useLocalStorage('bs-projscreen', null);
 
   // Apply theme & font size to root
   useEffect(() => {
@@ -229,6 +230,8 @@ export default function App() {
           onZoom={setProjZoom}
           autoFull={projFull}
           onAutoFull={setProjFull}
+          screenPref={projScreen}
+          onScreenPref={setProjScreen}
           onClose={() => setProjectCtx(null)}
         />
       )}
