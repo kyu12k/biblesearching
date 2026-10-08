@@ -58,8 +58,41 @@ function refLabel({ b, c, v }, version) {
   return `${name} ${c}:${v}`;
 }
 
-// 글자 크기 배율: 1 = 화면에 꽉 차게, 그 아래로만 줄일 수 있다
-const ZOOM_MIN = 0.5, ZOOM_MAX = 1, ZOOM_STEP = 0.05;
+// 글자 크기 배율: 1 = 성경에서 가장 긴 구절도 다 들어가는 크기 (모든 절이 같은 크기).
+// 1보다 키우면 그 크기에 안 들어가는 드문 긴 절만 그 절에서 줄여서 보여준다.
+const ZOOM_MIN = 0.6, ZOOM_MAX = 2, ZOOM_STEP = 0.1;
+
+// 기준 크기를 정할 때 실제로 그려볼 긴 구절 후보 (글자 수 상위 몇 개)
+function longestVerses(bible, other, bilingual, count = 10) {
+  const all = [];
+  for (const [b, book] of Object.entries(bible ?? {})) {
+    for (const [c, ch] of Object.entries(book)) {
+      for (const [v, t] of Object.entries(ch)) {
+        const o = bilingual ? (other?.[b]?.[c]?.[v] ?? '') : '';
+        all.push({ t, o });
+      }
+    }
+  }
+  const top = (score) => [...all].sort((x, y) => score(y) - score(x)).slice(0, count);
+  if (!bilingual) return top(x => x.t.length);
+  // 한·영 함께: 한글이 긴 절, 영어가 긴 절, 둘을 합쳐 긴 절을 모두 후보로
+  const set = new Set([...top(x => x.t.length), ...top(x => x.o.length), ...top(x => x.t.length + x.o.length * 0.4)]);
+  return [...set];
+}
+
+function fillMeasure(el, t, o) {
+  el.replaceChildren();
+  const p = document.createElement('p');
+  p.className = 'project-verse';
+  p.textContent = t;
+  el.appendChild(p);
+  if (o) {
+    const q = document.createElement('p');
+    q.className = 'project-verse other';
+    q.textContent = o;
+    el.appendChild(q);
+  }
+}
 const clampZoom = z => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z * 100) / 100));
 
 // ── 여러 모니터 (Window Management API — 데스크톱 크롬·엣지) ──
@@ -113,15 +146,18 @@ export default function ProjectView({
   // 보조 모니터가 연결되어 있는지 (권한 없이 알 수 있음) — 있을 때만 모니터 버튼을 보여준다
   const [extended, setExtended] = useState(() => MULTI_SCREEN && !!window.screen.isExtended);
   const [notice, setNotice] = useState('');
+  const [boxSize, setBoxSize] = useState(null);   // 다른 모니터로 옮기면 해상도가 바뀌므로 다시 계산
 
   const rootRef  = useRef(null);
   const boxRef   = useRef(null);
   const textRef  = useRef(null);
+  const measureRef = useRef(null);   // 기준 크기를 재기 위한 보이지 않는 복사본
+  const baseRef    = useRef({ key: '', size: 0 });
   const uiTimer  = useRef(null);
   const touchX   = useRef(null);
   const noticeTimer = useRef(null);
 
-  const zoom = clampZoom(rawZoom ?? 0.9);
+  const zoom = clampZoom(rawZoom ?? 1);
   const cur = list[idx];
   const text = bible?.[String(cur.b)]?.[String(cur.c)]?.[String(cur.v)] ?? '';
   const otherVersion = version === 'NIV' ? 'HRV' : 'NIV';
@@ -130,6 +166,10 @@ export default function ProjectView({
   // 설치되어 있는 글꼴만 고를 수 있게 (probe 가 없는 항목은 항상 표시)
   const fonts = useMemo(() => PROJECT_FONTS.filter(f => !f.probe || hasFont(f.probe)), []);
   const curFont = fonts.find(f => f.id === font) ?? fonts[0];
+  const candidates = useMemo(
+    () => longestVerses(bible, bibles?.[otherVersion], bilingual),
+    [bible, bibles, otherVersion, bilingual],
+  );
 
   // 고른 글꼴이 웹폰트면 다 받은 뒤에 글자 크기를 다시 맞춘다
   useEffect(() => {
@@ -263,22 +303,56 @@ export default function ProjectView({
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
-  // 화면에 꽉 차도록 글자 크기 자동 계산
+  // 맞춤 영역의 크기를 지켜본다 (창 크기·모니터가 바뀌면 다시 계산)
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setBoxSize({ w: box.clientWidth, h: box.clientHeight }));
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, []);
+
+  // 글자 크기: 절을 넘겨도 바뀌지 않도록, 가장 긴 구절이 들어가는 크기를 한 번 구해 고정한다.
   useLayoutEffect(() => {
-    const box = boxRef.current, el = textRef.current;
-    if (!box || !el) return;
-    // 먼저 화면에 꽉 차는 크기를 찾고(한 글자가 너무 커지지 않도록 상한을 둔다),
-    // 거기에 사용자가 고른 배율을 곱한다. 배율이 1이면 화면에 꽉 찬다.
-    const cap = Math.min(box.clientWidth * 0.16, box.clientHeight * 0.18);
-    let lo = 12, hi = Math.max(20, cap);
-    for (let i = 0; i < 14; i++) {
-      const mid = (lo + hi) / 2;
-      el.style.fontSize = `${mid}px`;
-      if (el.scrollHeight <= box.clientHeight && el.scrollWidth <= box.clientWidth) lo = mid;
-      else hi = mid;
+    const box = boxRef.current, el = textRef.current, m = measureRef.current;
+    if (!box || !el || !m) return;
+    const W = box.clientWidth, H = box.clientHeight;
+    const fits = node => node.scrollHeight <= H && node.scrollWidth <= W;
+
+    // 1) 기준 크기 — 화면 크기·글꼴·한영 여부가 바뀔 때만 다시 잰다
+    const key = [W, H, version, bilingual, curFont.id, fontTick].join('|');
+    if (baseRef.current.key !== key) {
+      // 가장 많이 넘칠 후보부터 검사하면 대부분 첫 후보에서 판정이 끝난다
+      m.style.fontSize = '40px';
+      const order = candidates
+        .map(c => { fillMeasure(m, c.t, c.o); return { ...c, h: m.scrollHeight }; })
+        .sort((a, b) => b.h - a.h);
+      const allFit = size => {
+        m.style.fontSize = `${size}px`;
+        return order.every(c => { fillMeasure(m, c.t, c.o); return fits(m); });
+      };
+      let lo = 12, hi = Math.max(20, H * 0.2);
+      for (let i = 0; i < 12; i++) {
+        const mid = (lo + hi) / 2;
+        if (allFit(mid)) lo = mid; else hi = mid;
+      }
+      m.replaceChildren();
+      baseRef.current = { key, size: lo };
     }
-    el.style.fontSize = `${lo * zoom}px`;
-  }, [text, otherText, bilingual, zoom, curFont, fontTick]);
+
+    // 2) 배율 적용. 1보다 키운 경우 이 절이 안 들어가면 이 절만 줄인다
+    let size = baseRef.current.size * zoom;
+    el.style.fontSize = `${size}px`;
+    if (!fits(el)) {
+      let lo = 12, hi = size;
+      for (let i = 0; i < 12; i++) {
+        const mid = (lo + hi) / 2;
+        el.style.fontSize = `${mid}px`;
+        if (fits(el)) lo = mid; else hi = mid;
+      }
+      el.style.fontSize = `${lo}px`;
+    }
+  }, [text, otherText, bilingual, zoom, curFont, fontTick, boxSize, version, candidates]);
 
   function onTouchStart(e) { touchX.current = e.touches[0].clientX; }
   function onTouchEnd(e) {
@@ -305,17 +379,17 @@ export default function ProjectView({
       onClick={() => { setFontOpen(false); wakeUI(); }}
     >
       <div className="project-stage">
+        <div className="project-ref">
+          {label}
+          {bilingual && otherText && <span className="project-ref-other"> · {otherLabel}</span>}
+        </div>
         <div className="project-fit" ref={boxRef}>
           <div className="project-text" ref={textRef}>
             <p className="project-verse">{text}</p>
             {bilingual && otherText && <p className="project-verse other">{otherText}</p>}
           </div>
+          <div className="project-text project-measure" ref={measureRef} aria-hidden="true" />
         </div>
-      </div>
-
-      <div className="project-ref">
-        {label}
-        {bilingual && otherText && <span className="project-ref-other"> · {otherLabel}</span>}
       </div>
 
       <button className="project-nav prev" onClick={e => { e.stopPropagation(); go(-1); }} aria-label="이전 절">‹</button>

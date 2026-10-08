@@ -43,7 +43,7 @@ export default function App() {
   const [hlColor,    setHlColor]    = useLocalStorage('bs-hlcolor', '#ffe08a');
   const [bmColor,    setBmColor]    = useLocalStorage('bs-bmcolor', '#a8d8f0');
   const [projFont,   setProjFont]   = useLocalStorage('bs-projfont2', 'kopub');
-  const [projZoom,   setProjZoom]   = useLocalStorage('bs-projzoom',  0.9);
+  const [projZoom,   setProjZoom]   = useLocalStorage('bs-projzoom2', 1);
   const [projFull,   setProjFull]   = useLocalStorage('bs-projfull',  true);
   const [projScreen, setProjScreen] = useLocalStorage('bs-projscreen', null);
 
