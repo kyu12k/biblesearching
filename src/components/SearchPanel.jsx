@@ -35,9 +35,39 @@ function eiVariants(keyword) {
   return [...set];
 }
 
+// 지금 맞춤법 → 개역한글 원문 표기. 본문이 원문 표기라서, 지금 맞춤법으로 검색해도
+// 찾도록 원문 표기로 바꾼 검색어도 함께 찾는다 (본문에서 실제로 달라진 낱말들)
+const ORIGINAL_SPELLING = {
+  '파수꾼': '파숫군', '꾼': '군',             // 사냥꾼 → 사냥군
+  '숫': '수',                                  // 숫양·숫염소 → 수양·수염소
+  '셋째': '세째', '넷째': '네째',
+  '잠깐': '잠간', '연수': '년수', '쟁이': '장이', // 점쟁이 → 점장이
+  '맞도록': '맟도록', '버터': ['뻐터', '뻐더'], '치즈': '치스',   // 원문에 뻐터·뻐더가 다 있음
+  // '바닷가'는 넣지 않는다 — 원문 '바다가'가 "바다가 갈라지고"(바다+조사)와 구별되지 않아 잡음이 많다
+  '나뭇': '나무', '오랫': '오래', '바닷물': '바다물', '이야깃': '이야기', '경곗': '경계',
+  '육': '륙',                                  // 십육 → 십륙 (숫자)
+};
+const SPELLING_RE = new RegExp(Object.keys(ORIGINAL_SPELLING).sort((a, b) => b.length - a.length).join('|'), 'g');
+// 원문 표기로 바꾼 형태들 (한 낱말에 원문 표기가 여럿이면 모두)
+function toOriginalSpellings(k) {
+  let outs = [''], last = 0;
+  for (const m of k.matchAll(SPELLING_RE)) {
+    const mid = k.slice(last, m.index);
+    outs = outs.flatMap(o => [].concat(ORIGINAL_SPELLING[m[0]]).map(x => o + mid + x));
+    last = m.index + m[0].length;
+  }
+  return outs.map(o => o + k.slice(last));
+}
+
+// 검색어 하나로 함께 찾을 모든 형태
+function keywordVariants(keyword) {
+  const base = eiVariants(keyword);
+  return [...new Set([...base, ...base.flatMap(toOriginalSpellings)])];
+}
+
 // 키워드 하나에 대한 매처 (변형별 정규식을 미리 컴파일해 재사용)
 function makeMatcher(keyword) {
-  const regexes = eiVariants(keyword).map(makeFlexRegex);
+  const regexes = keywordVariants(keyword).map(makeFlexRegex);
   return text => regexes.some(re => { re.lastIndex = 0; return re.test(text); });
 }
 
@@ -117,7 +147,7 @@ export default function SearchPanel({ bibles, onGoTo }) {
         }
         // 원본 쿼리가 구절 안에 연속으로 등장하면 상위 노출
         const phrase = plainSpelling(query.trim().toLowerCase());
-        const phraseVariants = eiVariants(phrase);
+        const phraseVariants = keywordVariants(phrase).map(plainSpelling);
         const isExact = r => phraseVariants.some(p => plainSpelling(r.text.toLowerCase()).includes(p));
         found.sort((a, b) => (isExact(a) ? 0 : 1) - (isExact(b) ? 0 : 1));
 
@@ -136,7 +166,7 @@ export default function SearchPanel({ bibles, onGoTo }) {
     const keywords = query.trim().split(/\s+/).filter(Boolean);
     if (!keywords.length) return text;
     // 각 키워드의 모든 변형에 대해 하이라이트
-    const allVariants = keywords.flatMap(k => eiVariants(k));
+    const allVariants = keywords.flatMap(k => keywordVariants(k));
     let parts = [{ t: text, marked: false }];
     for (const k of allVariants) {
       const regex = makeFlexRegex(k);
