@@ -7,6 +7,7 @@ import ProjectView        from './components/ProjectView';
 import SidePanel          from './components/SidePanel';
 import PWAInstallPrompt   from './components/PWAInstallPrompt';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useUpdateReady } from './pwaUpdate';
 import { parseRef } from './utils/parseRef';
 import './App.css';
 
@@ -24,6 +25,8 @@ export default function App() {
   const [copyCtx, setCopyCtx] = useState(null);
   const [projectCtx, setProjectCtx] = useState(null);
   const [toast, setToast]     = useState(0);   // 0이면 숨김, 증가할 때마다 애니메이션 재시작
+  const updateReady = useUpdateReady();
+  const [updateDismissed, setUpdateDismissed] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [gotoRef,        setGotoRef]        = useState(null);
   const [compareGotoRef, setCompareGotoRef] = useState(null);
@@ -237,6 +240,15 @@ export default function App() {
       )}
 
       {toast > 0 && <div key={toast} className="toast">복사되었습니다</div>}
+
+      {/* 사용 중에 새 버전이 준비되면 안내 (크게 보기 중에는 화면에 나가지 않도록 닫은 뒤에) */}
+      {updateReady && !updateDismissed && !projectCtx && (
+        <div className="update-banner" role="status">
+          <span>새 버전이 있습니다</span>
+          <button className="update-reload" onClick={() => window.location.reload()}>새로고침</button>
+          <button className="update-close" onClick={() => setUpdateDismissed(true)} aria-label="닫기">✕</button>
+        </div>
+      )}
 
       <PWAInstallPrompt />
 

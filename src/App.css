@@ -533,6 +533,24 @@ mark { background: var(--mark); border-radius: 2px; }
 @keyframes toastIn  { from { opacity: 0; transform: translateX(-50%) translateY(10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
 
+/* ── 새 버전 안내 ──────────────────────────────────────────── */
+.update-banner {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+  z-index: 150; display: flex; align-items: center; gap: 8px;
+  max-width: calc(100% - 32px); padding: 8px 8px 8px 16px; border-radius: 12px;
+  background: var(--primary); color: #fff; font-size: 14px; white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25); animation: slideUp .25s ease;
+}
+.update-reload {
+  padding: 6px 14px; border: none; border-radius: 8px; cursor: pointer;
+  background: #fff; color: var(--primary); font-size: 14px; font-weight: 600;
+}
+.update-close {
+  padding: 4px 8px; border: none; background: none; cursor: pointer;
+  color: rgba(255,255,255,.75); font-size: 14px;
+}
+.app-version { font-size: 12px; color: var(--muted); text-align: right; }
+
 /* ── PWA Install Prompt ────────────────────────────────────── */
 .pwa-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,.45);

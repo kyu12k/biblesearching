@@ -169,6 +169,8 @@ export default function SidePanel({
                   ))}
                 </div>
               </div>
+
+              <div className="app-version">앱 버전 {import.meta.env.VITE_BUILD_TIME}</div>
             </div>
           )}
         </div>
