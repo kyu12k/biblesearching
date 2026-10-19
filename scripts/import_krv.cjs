@@ -31,6 +31,12 @@ function clean(t) {
 }
 const isPlaceholder = t => /^\((없음|[^)]*포함[^)]*)\)$/.test(t.trim());
 
+// krv.json 자체의 오타 (다른 개역한글 본문과 대조해 확인한 것만)
+const KRV_TYPOS = [
+  ['23:62:4', '쁄라라라 하리니', '쁄라라 하리니'],   // 사 62:4 '라'가 하나 더 들어감 (헵시바라 하며 와 같은 꼴)
+];
+const fixTypos = (id, t) => KRV_TYPOS.reduce((s, [where, from, to]) => (where === id ? s.replace(from, to) : s), t);
+
 const krv = JSON.parse(fs.readFileSync(KRV_PATH, 'utf8'));
 const hrv = JSON.parse(fs.readFileSync(HRV_PATH, 'utf8'));
 
@@ -43,7 +49,7 @@ for (const book of krv.books) {
     for (const vv of ch.verses) {
       const v = String(vv.verse);
       seen.add(`${b}:${c}:${v}`);
-      const next = clean(vv.text);
+      const next = fixTypos(`${b}:${c}:${v}`, clean(vv.text));
       const cur = hrv[b]?.[c]?.[v];
       if (cur === undefined) {
         if (isPlaceholder(next)) { stats.skipped.push(`${book.name} ${c}:${v} ${next}`); continue; }
