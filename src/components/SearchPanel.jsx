@@ -5,9 +5,26 @@ function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// 개역한글 옛 표기(볼찌어다·있을찐대·갈쌔)를 지금 맞춤법(볼지어다·있을진대·갈새)으로
+// 검색해도 찾도록, ㄹ 받침 뒤(또는 검색어 맨 앞)의 지/진/새는 된소리와 같은 글자로 본다.
+// 검색어 맨 앞의 '새'는 '새 노래'처럼 흔한 단어라 제외한다.
+const TENSE_PAIR = { '지': '[지찌]', '찌': '[지찌]', '진': '[진찐]', '찐': '[진찐]', '새': '[새쌔]', '쌔': '[새쌔]' };
+const isRieul = c => { const x = (c ?? '').charCodeAt(0) - 0xAC00; return x >= 0 && x < 11172 && x % 28 === 8; };
+// '일찌기'(일찍이)는 원래부터 '찌'인 낱말이라 넓히지 않는다
+const LEXICAL_TSI = { '일': '(?!기)' };
+function charPattern(ch, prev, first) {
+  if (!TENSE_PAIR[ch] || !(isRieul(prev) || (first && ch !== '새'))) return escapeRegex(ch);
+  if (LEXICAL_TSI[prev] && ch === '찌') return '찌';
+  if (LEXICAL_TSI[prev] && ch === '지') return `(?:지|찌${LEXICAL_TSI[prev]})`;
+  return TENSE_PAIR[ch];
+}
+// 정렬(완전 일치 우선)용: 옛 표기를 지금 표기로 맞춰 비교
+const plainSpelling = s => s.replace(/찌/g, '지').replace(/찐/g, '진').replace(/쌔/g, '새');
+
 // 글자 사이 공백을 허용하는 정규식 ("하나님" → "하 나 님" 도 매칭). 영문은 대소문자 무시
 function makeFlexRegex(keyword) {
-  return new RegExp(keyword.split('').map(escapeRegex).join('\\s*'), 'gi');
+  const chars = keyword.split('');
+  return new RegExp(chars.map((ch, i) => charPattern(ch, chars[i - 1], i === 0)).join('\\s*'), 'gi');
 }
 
 // '의' 붙여쓰기/띄어쓰기 변형 생성
@@ -99,9 +116,9 @@ export default function SearchPanel({ bibles, onGoTo }) {
           }
         }
         // 원본 쿼리가 구절 안에 연속으로 등장하면 상위 노출
-        const phrase = query.trim().toLowerCase();
+        const phrase = plainSpelling(query.trim().toLowerCase());
         const phraseVariants = eiVariants(phrase);
-        const isExact = r => phraseVariants.some(p => r.text.toLowerCase().includes(p));
+        const isExact = r => phraseVariants.some(p => plainSpelling(r.text.toLowerCase()).includes(p));
         found.sort((a, b) => (isExact(a) ? 0 : 1) - (isExact(b) ? 0 : 1));
 
         setResults(found);

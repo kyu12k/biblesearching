@@ -3,7 +3,7 @@ import { BOOK_MAP } from '../data/books';
 
 // 화면에 띄울 때 고를 수 있는 글꼴. probe 글꼴이 설치된 경우에만 목록에 보여준다
 const PROJECT_FONTS = [
-  { id: 'kopub',    label: 'KoPub 돋움', probe: null,      stack: "'KoPubWorld Dotum','Malgun Gothic',sans-serif" },
+  { id: 'kopub',    label: 'KoPub 돋움', probe: null,      stack: "'KoPubWorld Dotum','Malgun Gothic',sans-serif", weight: 700 },
   { id: 'myeongjo', label: '명조',     probe: 'Batang',      stack: "'Nanum Myeongjo','NanumMyeongjo','Batang','바탕',serif" },
   { id: 'gothic',   label: '고딕',     probe: null,          stack: "'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo','Noto Sans KR',sans-serif" },
   { id: 'nanum',    label: '나눔고딕', probe: 'NanumGothic', stack: "'NanumGothic','Nanum Gothic','Malgun Gothic',sans-serif" },
@@ -175,7 +175,7 @@ export default function ProjectView({
   useEffect(() => {
     const first = curFont.stack.split(',')[0];
     let alive = true;
-    document.fonts?.load(`40px ${first}`)
+    document.fonts?.load(`${curFont.weight ?? 400} 40px ${first}`)
       .then(() => { if (alive) setFontTick(t => t + 1); })
       .catch(() => {});
     return () => { alive = false; };
@@ -372,7 +372,7 @@ export default function ProjectView({
     <div
       ref={rootRef}
       className={`project-view${showUI ? '' : ' hide-ui'}`}
-      style={{ fontFamily: curFont.stack }}
+      style={{ fontFamily: curFont.stack, fontWeight: curFont.weight ?? 400 }}
       onPointerMove={e => { if (e.pointerType === 'mouse') wakeUI(); }}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
@@ -401,7 +401,7 @@ export default function ProjectView({
         <div className="project-font-wrap">
           <button
             className={`project-font-btn${fontOpen ? ' on' : ''}`}
-            style={{ fontFamily: curFont.stack }}
+            style={{ fontFamily: curFont.stack, fontWeight: curFont.weight ?? 400 }}
             onClick={() => { setFontOpen(o => !o); wakeUI(); }}
             title="글꼴 고르기"
           >{curFont.label}</button>
@@ -411,7 +411,7 @@ export default function ProjectView({
                 <button
                   key={f.id}
                   className={f.id === curFont.id ? 'sel' : ''}
-                  style={{ fontFamily: f.stack }}
+                  style={{ fontFamily: f.stack, fontWeight: f.weight ?? 400 }}
                   onClick={() => { onFont(f.id); setFontOpen(false); wakeUI(); }}
                 >
                   <span className="project-font-name">{f.label}</span>
