@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { BOOKS, BOOK_MAP } from '../data/books';
+import { BOOKS, BOOK_MAP, chapterUnit } from '../data/books';
 
 function buildPreview({ bookId, chapter, verses, allVerses, versions, showVerseNum, showVersion, showParen, eachLine, layout }) {
   const bookInfo = BOOK_MAP[bookId];
@@ -194,7 +194,7 @@ export default function CompareView({ bibles, gotoRef, bookmarks, onBookmark, no
         </select>
         <select value={chapter} onChange={e => goTo(bookId, +e.target.value)}>
           {Array.from({ length: maxChapter }, (_, i) => i + 1).map(c => (
-            <option key={c} value={c}>{c}장</option>
+            <option key={c} value={c}>{c}{chapterUnit(bookId)}</option>
           ))}
         </select>
         <button className="nav-btn" onClick={prevChapter} disabled={bookId === 1 && chapter === 1} title="이전 장">◀</button>
@@ -215,7 +215,7 @@ export default function CompareView({ bibles, gotoRef, bookmarks, onBookmark, no
       </div>
 
       <div className="compare-title">
-        {bookInfo?.ko} {chapter}장 — 버전 비교
+        {bookInfo?.ko} {chapter}{chapterUnit(bookId)} — 버전 비교
       </div>
 
       <div className="compare-verses" ref={listRef}>

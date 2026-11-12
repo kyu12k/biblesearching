@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { BOOKS, BOOK_MAP } from '../data/books';
+import { BOOKS, BOOK_MAP, chapterUnit } from '../data/books';
 
 export default function BibleReader({ bible, version, onCopy, onProject, onToast, gotoRef, bookmarks, onBookmark, notes, onNote, hlDuration, hlColor, bmColor }) {
   const [bookId, setBookId]           = useState(1);
@@ -105,7 +105,7 @@ export default function BibleReader({ bible, version, onCopy, onProject, onToast
   function copyChapter() {
     const NL = String.fromCharCode(10);
     const lines = verses.map(([v, t]) => v + ' ' + t).join(NL);
-    navigator.clipboard.writeText(bookInfo?.ko + ' ' + chapter + '장' + NL + lines);
+    navigator.clipboard.writeText(bookInfo?.ko + ' ' + chapter + chapterUnit(bookId) + NL + lines);
     onToast();
   }
 
@@ -117,7 +117,7 @@ export default function BibleReader({ bible, version, onCopy, onProject, onToast
         </select>
         <select value={chapter} onChange={e => selectChapter(+e.target.value)}>
           {Array.from({ length: maxChapter }, (_, i) => i + 1).map(c => (
-            <option key={c} value={c}>{c}장</option>
+            <option key={c} value={c}>{c}{chapterUnit(bookId)}</option>
           ))}
         </select>
         <div className="nav-btns">
@@ -142,7 +142,7 @@ export default function BibleReader({ bible, version, onCopy, onProject, onToast
       </div>
 
       <div className="chapter-title">
-        {bookInfo?.ko} {chapter}장
+        {bookInfo?.ko} {chapter}{chapterUnit(bookId)}
         <span className="version-badge">{version}</span>
       </div>
 

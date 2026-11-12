@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BOOK_MAP } from '../data/books';
+import { BOOK_MAP, chapterUnit } from '../data/books';
 
 const HL_COLORS = [
   { value: '#ffe08a', label: '노랑' },
@@ -112,7 +112,7 @@ export default function SidePanel({
               : history.map((h, i) => (
                 <div key={i} className="side-item">
                   <div className="side-item-ref" onClick={() => { onGoToHistory(h); onClose(); }}>
-                    <strong>{BOOK_MAP[h.b]?.ko} {h.c}장{h.v ? ` ${h.v}절` : ''}</strong>
+                    <strong>{BOOK_MAP[h.b]?.ko} {h.c}{chapterUnit(h.b)}{h.v ? ` ${h.v}절` : ''}</strong>
                     <span className="side-item-time">{h.time}</span>
                   </div>
                   <button className="remove-btn" onClick={() => onRemoveHistory(i)}>✕</button>

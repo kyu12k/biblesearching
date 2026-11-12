@@ -69,3 +69,6 @@ export const BOOKS = [
 ];
 
 export const BOOK_MAP = Object.fromEntries(BOOKS.map(b => [b.id, b]));
+
+// 장 단위 이름: 시편(19)만 '편', 나머지는 '장'
+export const chapterUnit = bookId => (bookId === 19 ? '편' : '장');
