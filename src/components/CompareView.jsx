@@ -109,6 +109,7 @@ export default function CompareView({ bibles, gotoRef, bookmarks, onBookmark, no
   if (gotoRef && gotoRef !== lastGoto) {
     setLastGoto(gotoRef);
     goTo(gotoRef.b, gotoRef.c);
+    if (gotoRef.sel) setSelected(new Set(gotoRef.sel)); // 본문 조회에서 고른 절 유지
   }
 
   // 장이 바뀌면 맨 위로, 이동 요청에 절이 있으면 그 절로 스크롤

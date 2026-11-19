@@ -185,6 +185,11 @@ export default function App() {
               setCopyCtx({ bookId, chapter, verses, chapterData })
             }
             onProject={(bookId, chapter, verses) => setProjectCtx({ bookId, chapter, verses })}
+            onCompare={(b, c, verses) => {
+              // 선택한 절을 그대로 들고 버전 비교 탭으로 (첫 절로 스크롤)
+              setCompareGotoRef({ b, c, v: verses[0], sel: verses });
+              setTab('compare');
+            }}
             onToast={showToast}
             bookmarks={bookmarks}
             onBookmark={setBookmarks}

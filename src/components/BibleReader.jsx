@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BOOKS, BOOK_MAP, chapterUnit } from '../data/books';
 
-export default function BibleReader({ bible, version, onCopy, onProject, onToast, gotoRef, bookmarks, onBookmark, notes, onNote, hlDuration, hlColor, bmColor }) {
+export default function BibleReader({ bible, version, onCopy, onProject, onCompare, onToast, gotoRef, bookmarks, onBookmark, notes, onNote, hlDuration, hlColor, bmColor }) {
   const [bookId, setBookId]           = useState(1);
   const [chapter, setChapter]         = useState(1);
   const [selected, setSelected]       = useState(new Set());
@@ -128,6 +128,9 @@ export default function BibleReader({ bible, version, onCopy, onProject, onToast
           <button className="icon-btn" onClick={copyChapter} title="장 전체 복사">📋</button>
           {selected.size > 0 && (
             <>
+              <button className="project-btn" onClick={() =>
+                onCompare(bookId, chapter, [...selected].sort((a, b) => +a - +b))
+              } title="선택한 절을 버전 비교로 보기">비교</button>
               <button className="project-btn" onClick={() =>
                 onProject(bookId, chapter, [...selected].sort((a, b) => +a - +b))
               } title="선택한 절을 화면 가득 보기">크게 보기</button>
